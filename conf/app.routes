@@ -1,3 +1,4 @@
 # microservice specific routes
 
-GET        /hello-world             uk.gov.hmrc.customsdatastore.controllers.MicroserviceHelloWorld.hello
+GET        /historiceori/:eori             uk.gov.hmrc.customs.datastore.controllers.HistoricEoriController.getEoriHistory(eori:String)
+
