@@ -30,7 +30,10 @@ import scala.concurrent.Future
 
 
 class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
-  extends { val EoriFieldsName = classOf[EORIHistory].getDeclaredFields.apply(0).getName }
+  extends {
+    val EoriFieldsName = classOf[EORIHistory].getDeclaredFields.apply(0).getName
+    val EorisFieldsName = classOf[EoriHistoryResponse].getDeclaredFields.apply(0).getName
+  }
     with ReactiveRepository[EoriHistoryResponse, BSONObjectID](
     collectionName = "dataStore",
     mongo = mongoComponent.mongoConnector.db,
@@ -55,7 +58,7 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
   }
 
   def eoriGet(eori: EORI): Future[Option[EoriHistoryResponse]] = {
-    find(EoriFieldsName -> eori).map(_.headOption)
+    find(s"$EorisFieldsName.$EoriFieldsName" -> eori).map(_.headOption)
   }
 
 }

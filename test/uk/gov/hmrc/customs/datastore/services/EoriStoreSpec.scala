@@ -17,11 +17,11 @@
 package uk.gov.hmrc.customs.datastore.services
 
 import org.scalatest.{FlatSpec, MustMatchers}
-import org.scalatestplus.play.PlaySpec
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
-import uk.gov.hmrc.customs.datastore.domain.EORIHistory
+import uk.gov.hmrc.customs.datastore.domain.{EORIHistory, EoriHistoryResponse}
 import uk.gov.hmrc.mongo.MongoConnector
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class EoriStoreSpec extends FlatSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits {
@@ -38,7 +38,8 @@ class EoriStoreSpec extends FlatSpec with MustMatchers with MongoSpecSupport wit
       _ <- cache.eoriAdd(newEori)
       storedEori <- cache.eoriGet(eori1)
     } yield storedEori
-    result.foreach(a => println(s"### newEori: $a"))
+
+    await(result) mustBe Some(EoriHistoryResponse(Seq(newEori)))
   }
 
 }
