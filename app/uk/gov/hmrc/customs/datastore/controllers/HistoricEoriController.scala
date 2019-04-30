@@ -22,13 +22,15 @@ import scala.concurrent.ExecutionContext
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 import play.api.mvc._
 import uk.gov.hmrc.customs.datastore.domain._
+import uk.gov.hmrc.customs.datastore.services.EoriStore
 
 import scala.concurrent.Future
 
 @Singleton()
-class HistoricEoriController @Inject()(implicit ec : ExecutionContext) extends BaseController {
+class HistoricEoriController @Inject()(eoriStore: EoriStore)(implicit ec: ExecutionContext) extends BaseController {
 
 	def getEoriHistory(eori:EORI) = Action.async { implicit request =>
+		val eoriData = eoriStore.eoriGet(eori)
 		Future.successful(Ok(s"Hello EORI: $eori" ))
 	}
 

@@ -18,22 +18,48 @@ package uk.gov.hmrc.customs.datastore.controllers
 
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import org.mockito.ArgumentMatchers
+import org.mockito.Mockito.{verify, when}
+import org.scalatest.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import uk.gov.hmrc.customs.datastore.domain.EoriHistoryResponse
+import uk.gov.hmrc.customs.datastore.services.EoriStore
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-class HistoricEoriControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSuite {
+class HistoricEoriControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar {
 
   val fakeRequest = FakeRequest("GET", "/")
 
   "GET /" should {
+
     "return 200" in {
-      val controller = new HistoricEoriController()
-      val result = controller.getEoriHistory("GB1234567890")(fakeRequest)
+      val eori = "GB1234567890"
+      val mockEoriStore = mock[EoriStore]
+//      when(mockEoriStore.eoriGet(ArgumentMatchers.eq(eori)))
+//        .thenReturn(Future.successful(Some(EoriHistoryResponse(Seq()))))
+
+      val controller = new HistoricEoriController(mockEoriStore)
+      val result = controller.getEoriHistory(eori)(fakeRequest)
       status(result) shouldBe Status.OK
     }
+
+  }
+
+  "getEoriHistory" should {
+
+    "call EoriStore.eoriGet" in {
+      val eori = "GB1234567890"
+      val mockEoriStore = mock[EoriStore]
+
+      val controller = new HistoricEoriController(mockEoriStore)
+      controller.getEoriHistory(eori)(fakeRequest)
+      verify(mockEoriStore).eoriGet(ArgumentMatchers.eq(eori))
+    }
+
   }
 
 }
