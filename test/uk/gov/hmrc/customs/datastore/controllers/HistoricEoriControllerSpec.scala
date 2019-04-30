@@ -16,18 +16,17 @@
 
 package uk.gov.hmrc.customs.datastore.controllers
 
+import org.mockito.ArgumentMatchers
+import org.mockito.Mockito.when
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.{verify, when}
-import org.scalatest.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.customs.datastore.domain.{EoriHistory, EoriHistoryResponse}
 import uk.gov.hmrc.customs.datastore.services.EoriStore
-import uk.gov.hmrc.customs.datastore.domain.EoriHistory._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -55,17 +54,6 @@ class HistoricEoriControllerSpec extends WordSpec with Matchers with GuiceOneApp
 
   "getEoriHistory" should {
 
-    "call EoriStore.eoriGet" in {
-      val eori = "GB1234567890"
-      val mockEoriStore = mock[EoriStore]
-      when(mockEoriStore.eoriGet(ArgumentMatchers.eq(eori)))
-        .thenReturn(Future.successful(Some(EoriHistoryResponse(Seq()))))
-
-      val controller = new HistoricEoriController(mockEoriStore)
-      controller.getEoriHistory(eori)(fakeRequest)
-      verify(mockEoriStore).eoriGet(ArgumentMatchers.eq(eori))
-    }
-
     "return the expected eori history" in {
       val eori = "GB1234567890"
       val eoriHistory = Seq(EoriHistory(eori, None, None))
@@ -74,12 +62,17 @@ class HistoricEoriControllerSpec extends WordSpec with Matchers with GuiceOneApp
       when(mockEoriStore.eoriGet(ArgumentMatchers.eq(eori)))
         .thenReturn(Future.successful(Some(EoriHistoryResponse(eoriHistory))))
 
-      val expectedResponse = Json.toJson(EoriHistoryResponse(eoriHistory))
+      val expectedResponse =
+        """{
+          |  "eoris" : [ {
+          |    "eori" : "GB1234567890"
+          |  } ]
+          |}""".stripMargin
 
       val controller = new HistoricEoriController(mockEoriStore)
       val response = contentAsJson(call(controller.getEoriHistory(eori), fakeRequest))
 
-      response shouldBe expectedResponse
+      Json.prettyPrint(response) shouldBe expectedResponse
     }
 
     }
