@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.customs.datastore.services
 
-import uk.gov.hmrc.customs.datastore.domain.{EORI, EORIHistory, EoriHistoryResponse}
+import uk.gov.hmrc.customs.datastore.domain.{EORIHistory, EoriHistoryResponse}
 import javax.inject._
 import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -45,7 +45,7 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
   override def indexes: Seq[Index] = Seq(
     Index(Seq(EoriFieldsName -> IndexType.Ascending), name = Some(EoriFieldsName + "Index"), unique = true, sparse = true))
 
-  def eoriAssociate(associatedEori:EORI, eoriHistory:EORIHistory): Future[Any] = {
+  def eoriAssociate(associatedEori: String, eoriHistory:EORIHistory): Future[Any] = {
     findAndUpdate(
       Json.obj(EoriFieldsName -> associatedEori),
       Json.obj("$addToSet" -> eoriHistory),
@@ -57,7 +57,7 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
     insert(EoriHistoryResponse(Seq(eoriHistory)))
   }
 
-  def eoriGet(eori: EORI): Future[Option[EoriHistoryResponse]] = {
+  def eoriGet(eori: String): Future[Option[EoriHistoryResponse]] = {
     find(s"$EorisFieldsName.$EoriFieldsName" -> eori).map(_.headOption)
   }
 

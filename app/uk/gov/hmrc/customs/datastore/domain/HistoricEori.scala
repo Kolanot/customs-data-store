@@ -19,7 +19,7 @@ package uk.gov.hmrc.customs.datastore.domain
 import play.api.libs.json.Json
 
 case class EORIHistory(
-                        EORI: EORI,
+                        EORI: String,
                         validFrom: Option[String],
                         validUntil: Option[String]
                       )
