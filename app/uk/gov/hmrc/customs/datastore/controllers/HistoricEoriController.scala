@@ -29,7 +29,7 @@ import uk.gov.hmrc.customs.datastore.domain.EoriHistory._
 class HistoricEoriController @Inject()(eoriStore: EoriStore)(implicit ec: ExecutionContext) extends BaseController {
 
 	def getEoriHistory(eori: String): Action[AnyContent] = Action.async { implicit request =>
-		eoriStore.eoriGet(eori).map(maybeEoriHistory => Ok(Json.toJson(maybeEoriHistory)))
+		eoriStore.getEori(eori).map(maybeEoriHistory => Ok(Json.toJson(maybeEoriHistory)))
 	}
 
 }

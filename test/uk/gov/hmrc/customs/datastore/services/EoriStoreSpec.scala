@@ -35,8 +35,8 @@ class EoriStoreSpec extends FlatSpec with MustMatchers with MongoSpecSupport wit
   it must "put a single EORI into the database" in {
     val newEori = EoriHistory(eori1, Some("1985-03-20T19:30:51Z"),None)
     val result = for {
-      _ <- cache.eoriAdd(newEori)
-      storedEori <- cache.eoriGet(eori1)
+      _ <- cache.addEori(newEori)
+      storedEori <- cache.getEori(eori1)
     } yield storedEori
 
     await(result) mustBe Some(EoriHistoryResponse(Seq(newEori)))

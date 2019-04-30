@@ -42,7 +42,7 @@ class HistoricEoriControllerSpec extends WordSpec with Matchers with GuiceOneApp
     "return 200" in {
       val eori = "GB1234567890"
       val mockEoriStore = mock[EoriStore]
-      when(mockEoriStore.eoriGet(ArgumentMatchers.eq(eori)))
+      when(mockEoriStore.getEori(ArgumentMatchers.eq(eori)))
         .thenReturn(Future.successful(Some(EoriHistoryResponse(Seq()))))
 
       val controller = new HistoricEoriController(mockEoriStore)
@@ -59,7 +59,7 @@ class HistoricEoriControllerSpec extends WordSpec with Matchers with GuiceOneApp
       val eoriHistory = Seq(EoriHistory(eori, None, None))
 
       val mockEoriStore = mock[EoriStore]
-      when(mockEoriStore.eoriGet(ArgumentMatchers.eq(eori)))
+      when(mockEoriStore.getEori(ArgumentMatchers.eq(eori)))
         .thenReturn(Future.successful(Some(EoriHistoryResponse(eoriHistory))))
 
       val expectedResponse =

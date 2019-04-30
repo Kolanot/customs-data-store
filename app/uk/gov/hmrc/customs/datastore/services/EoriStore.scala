@@ -45,7 +45,7 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
   override def indexes: Seq[Index] = Seq(
     Index(Seq(EoriFieldsName -> IndexType.Ascending), name = Some(EoriFieldsName + "Index"), unique = true, sparse = true))
 
-  def eoriAssociate(associatedEori: String, eoriHistory:EoriHistory): Future[Any] = {
+  def associateEori(associatedEori: String, eoriHistory:EoriHistory): Future[Any] = {
     findAndUpdate(
       Json.obj(EoriFieldsName -> associatedEori),
       Json.obj("$addToSet" -> eoriHistory),
@@ -53,11 +53,11 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
     )
   }
 
-  def eoriAdd(eoriHistory: EoriHistory):Future[Any] = {
+  def addEori(eoriHistory: EoriHistory):Future[Any] = {
     insert(EoriHistoryResponse(Seq(eoriHistory)))
   }
 
-  def eoriGet(eori: String): Future[Option[EoriHistoryResponse]] = {
+  def getEori(eori: String): Future[Option[EoriHistoryResponse]] = {
     find(s"$EorisFieldsName.$EoriFieldsName" -> eori).map(_.headOption)
   }
 
