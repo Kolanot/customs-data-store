@@ -43,7 +43,7 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
 
 
   override def indexes: Seq[Index] = Seq(
-    Index(Seq(EoriFieldsName -> IndexType.Ascending), name = Some(EoriFieldsName + "Index"), unique = true, sparse = true))
+    Index(Seq(s"$EorisFieldsName.$EoriFieldsName" -> IndexType.Ascending), name = Some(EorisFieldsName + EoriFieldsName + "Index"), unique = true, sparse = true))
 
   def associateEori(associatedEori: String, eoriHistory:EoriHistory): Future[Any] = {
     findAndUpdate(

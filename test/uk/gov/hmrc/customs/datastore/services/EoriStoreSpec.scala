@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.customs.datastore.services
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, MustMatchers}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.datastore.domain.{EoriHistory, EoriHistoryResponse}
@@ -24,7 +24,11 @@ import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class EoriStoreSpec extends FlatSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits {
+class EoriStoreSpec extends FlatSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with BeforeAndAfterEach {
+
+  override def beforeEach: Unit = {
+    cache.drop
+  }
 
   val reactiveMongo = new ReactiveMongoComponent {
     override def mongoConnector: MongoConnector = mongoConnectorForTest
