@@ -18,15 +18,13 @@ package uk.gov.hmrc.customs.datastore.domain
 
 import play.api.libs.json.Json
 
-case class EORIHistory(
-                        EORI: String,
-                        validFrom: Option[String],
-                        validUntil: Option[String]
-                      )
+case class EoriHistory(eori: String,
+                       validFrom: Option[String],
+                       validUntil: Option[String])
 
-case class EoriHistoryResponse(eoris:Seq[EORIHistory])
+case class EoriHistoryResponse(eoris: Seq[EoriHistory])
 
-object EORIHistory {
-  implicit val eoriHistoryFormat = Json.format[EORIHistory]
+object EoriHistory {
+  implicit val eoriHistoryFormat = Json.format[EoriHistory]
   implicit val eoriHistoryResponseFormat = Json.format[EoriHistoryResponse]
 }

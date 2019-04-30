@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.customs.datastore.services
 
-import uk.gov.hmrc.customs.datastore.domain.{EORIHistory, EoriHistoryResponse}
+import uk.gov.hmrc.customs.datastore.domain.{EoriHistory, EoriHistoryResponse}
 import javax.inject._
 import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -31,13 +31,13 @@ import scala.concurrent.Future
 
 class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
   extends {
-    val EoriFieldsName = classOf[EORIHistory].getDeclaredFields.apply(0).getName
+    val EoriFieldsName = classOf[EoriHistory].getDeclaredFields.apply(0).getName
     val EorisFieldsName = classOf[EoriHistoryResponse].getDeclaredFields.apply(0).getName
   }
     with ReactiveRepository[EoriHistoryResponse, BSONObjectID](
     collectionName = "dataStore",
     mongo = mongoComponent.mongoConnector.db,
-    domainFormat = EORIHistory.eoriHistoryResponseFormat,
+    domainFormat = EoriHistory.eoriHistoryResponseFormat,
     idFormat = ReactiveMongoFormats.objectIdFormats
   ) {
 
@@ -45,7 +45,7 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
   override def indexes: Seq[Index] = Seq(
     Index(Seq(EoriFieldsName -> IndexType.Ascending), name = Some(EoriFieldsName + "Index"), unique = true, sparse = true))
 
-  def eoriAssociate(associatedEori: String, eoriHistory:EORIHistory): Future[Any] = {
+  def eoriAssociate(associatedEori: String, eoriHistory:EoriHistory): Future[Any] = {
     findAndUpdate(
       Json.obj(EoriFieldsName -> associatedEori),
       Json.obj("$addToSet" -> eoriHistory),
@@ -53,7 +53,7 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
     )
   }
 
-  def eoriAdd(eoriHistory: EORIHistory):Future[Any] = {
+  def eoriAdd(eoriHistory: EoriHistory):Future[Any] = {
     insert(EoriHistoryResponse(Seq(eoriHistory)))
   }
 

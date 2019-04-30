@@ -19,7 +19,7 @@ package uk.gov.hmrc.customs.datastore.services
 import org.scalatest.{FlatSpec, MustMatchers}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
-import uk.gov.hmrc.customs.datastore.domain.{EORIHistory, EoriHistoryResponse}
+import uk.gov.hmrc.customs.datastore.domain.{EoriHistory, EoriHistoryResponse}
 import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -33,7 +33,7 @@ class EoriStoreSpec extends FlatSpec with MustMatchers with MongoSpecSupport wit
   val eori1 = "EORI12345678"
 
   it must "put a single EORI into the database" in {
-    val newEori = EORIHistory(eori1, Some("1985-03-20T19:30:51Z"),None)
+    val newEori = EoriHistory(eori1, Some("1985-03-20T19:30:51Z"),None)
     val result = for {
       _ <- cache.eoriAdd(newEori)
       storedEori <- cache.eoriGet(eori1)
