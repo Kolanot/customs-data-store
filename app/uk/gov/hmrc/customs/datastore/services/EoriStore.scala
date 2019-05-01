@@ -45,10 +45,11 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
   override def indexes: Seq[Index] = Seq(
     Index(Seq(s"$EorisFieldsName.$EoriFieldsName" -> IndexType.Ascending), name = Some(EorisFieldsName + EoriFieldsName + "Index"), unique = true, sparse = true))
 
-  def associateEori(associatedEori: String, eoriHistory:EoriHistory): Future[Any] = {
+  def associateEori(associatedEori: String, eoriHistory: EoriHistory): Future[Any] = {
+    // TODO: update last period valid to with eoriHistory.validFrom-1
     findAndUpdate(
-      Json.obj(EoriFieldsName -> associatedEori),
-      Json.obj("$addToSet" -> eoriHistory),
+      query = Json.obj(s"$EorisFieldsName.$EoriFieldsName" -> associatedEori),
+      update = Json.obj("$addToSet" -> Json.obj(EorisFieldsName -> eoriHistory)),
       upsert = true
     )
   }
