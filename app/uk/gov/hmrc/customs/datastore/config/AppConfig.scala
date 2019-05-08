@@ -29,9 +29,9 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
   val eoriHistoryUrl = mdg / getConfString("mdg.sub21","eorihistory")
 
 
-  implicit class URLLike(left:String){  //TODO Test this
+  implicit class URLLike(left:String){  
     def /(right:String):String = checkEnding(left) + "/" + checkBeginning(right)
-    def checkEnding(in:String):String = if (in.lastIndexOf("/") == in.size) in.take(in.size-1) else in
+    def checkEnding(in:String):String = if (in.lastIndexOf("/") == in.size - 1) in.take(in.size-1) else in
     def checkBeginning(in:String):String = if (in.indexOf("/") == 0) in.drop(1) else in
   }
 
