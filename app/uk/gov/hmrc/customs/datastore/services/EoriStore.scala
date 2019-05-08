@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.customs.datastore.services
 
-import uk.gov.hmrc.customs.datastore.domain.{EoriHistory, EoriHistoryResponse}
 import javax.inject._
 import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
+import uk.gov.hmrc.customs.datastore.domain.{EoriHistory, EoriHistoryResponse}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -33,6 +33,7 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
   extends {
     val EoriFieldsName = classOf[EoriHistory].getDeclaredFields.apply(0).getName
     val EorisFieldsName = classOf[EoriHistoryResponse].getDeclaredFields.apply(0).getName
+    val EoriSearchField = s"$EorisFieldsName.$EoriFieldsName"
   }
     with ReactiveRepository[EoriHistoryResponse, BSONObjectID](
     collectionName = "dataStore",
@@ -43,23 +44,18 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
 
 
   override def indexes: Seq[Index] = Seq(
-    Index(Seq(s"$EorisFieldsName.$EoriFieldsName" -> IndexType.Ascending), name = Some(EorisFieldsName + EoriFieldsName + "Index"), unique = true, sparse = true))
+    Index(Seq(EoriSearchField -> IndexType.Ascending), name = Some(EorisFieldsName + EoriFieldsName + "Index"), unique = true, sparse = true))
 
-  def associateEori(associatedEori: String, eoriHistory: EoriHistory): Future[Any] = {
-    // TODO: update last period valid to with eoriHistory.validFrom-1
+  def saveEoris(histories:Seq[EoriHistory]):Future[Any] = {
     findAndUpdate(
-      query = Json.obj(s"$EorisFieldsName.$EoriFieldsName" -> associatedEori),
-      update = Json.obj("$addToSet" -> Json.obj(EorisFieldsName -> eoriHistory)),
+      query = Json.obj(EoriSearchField -> Json.obj("$in" -> histories.map(_.eori))),
+      update = Json.obj(EorisFieldsName -> Json.toJson(histories)),
       upsert = true
     )
   }
 
-  def addEori(eoriHistory: EoriHistory):Future[Any] = {
-    insert(EoriHistoryResponse(Seq(eoriHistory)))
-  }
-
   def getEori(eori: String): Future[Option[EoriHistoryResponse]] = {
-    find(s"$EorisFieldsName.$EoriFieldsName" -> eori).map(_.headOption)
+    find(EoriSearchField -> eori).map(_.headOption)
   }
 
 }

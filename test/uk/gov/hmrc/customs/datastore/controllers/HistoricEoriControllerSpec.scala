@@ -16,65 +16,64 @@
 
 package uk.gov.hmrc.customs.datastore.controllers
 
-import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.{eq => is, _}
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import org.scalatestplus.play.PlaySpec
 import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.customs.datastore.domain.{EoriHistory, EoriHistoryResponse}
-import uk.gov.hmrc.customs.datastore.services.EoriStore
+import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-class HistoricEoriControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar {
+class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar {
 
-  implicit val mat = app.materializer
+  implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
   val fakeRequest = FakeRequest("GET", "/")
 
   "GET /" should {
 
-    "return 200" in {
-      val eori = "GB1234567890"
-      val mockEoriStore = mock[EoriStore]
-      when(mockEoriStore.getEori(ArgumentMatchers.eq(eori)))
-        .thenReturn(Future.successful(Some(EoriHistoryResponse(Seq()))))
-
-      val controller = new HistoricEoriController(mockEoriStore)
-      val result = controller.getEoriHistory(eori)(fakeRequest)
-      status(result) shouldBe Status.OK
-    }
-
-  }
-
-  "getEoriHistory" should {
-
-    "return the expected eori history" in {
+    "return Eori from the cache" in {
       val eori = "GB1234567890"
       val eoriHistory = Seq(EoriHistory(eori, None, None))
 
       val mockEoriStore = mock[EoriStore]
-      when(mockEoriStore.getEori(ArgumentMatchers.eq(eori)))
+      when(mockEoriStore.getEori(is(eori)))
         .thenReturn(Future.successful(Some(EoriHistoryResponse(eoriHistory))))
-
-      val expectedResponse =
-        """{
-          |  "eoris" : [ {
-          |    "eori" : "GB1234567890"
-          |  } ]
-          |}""".stripMargin
-
-      val controller = new HistoricEoriController(mockEoriStore)
-      val response = contentAsJson(call(controller.getEoriHistory(eori), fakeRequest))
-
-      Json.prettyPrint(response) shouldBe expectedResponse
+      val historyService = mock[ETMPHistoryService]
+      when(historyService.getHistory(is(eori))(any()))
+        .thenReturn(Future.successful(Nil))
+      val controller = new HistoricEoriController(mockEoriStore, historyService)
+      val result = controller.getEoriHistory(eori)(fakeRequest)
+      status(result) mustBe Status.OK
+      contentAsJson(result) mustBe Json.toJson(eoriHistory)
     }
 
+
+    "request Eori history from HODS when the cache is empty" in {
+      val eori = "GB00000001"
+      val eoriHistory = Seq(EoriHistory(eori, Some("2001-01-20T00:00:00Z"), None))
+
+      val mockEoriStore = mock[EoriStore]
+      when(mockEoriStore.getEori(is(eori)))
+        .thenReturn(Future.successful(None))
+      //TODO check to see if saveEoris happened!
+      val historyService = mock[ETMPHistoryService]
+      when(historyService.getHistory(is(eori))(any()))
+        .thenReturn(Future.successful(eoriHistory))
+      val controller = new HistoricEoriController(mockEoriStore, historyService)
+      val result = controller.getEoriHistory(eori)(fakeRequest)
+      status(result) mustBe Status.OK
+      contentAsJson(result) mustBe Json.toJson(eoriHistory)
     }
+
+  }
 
 }

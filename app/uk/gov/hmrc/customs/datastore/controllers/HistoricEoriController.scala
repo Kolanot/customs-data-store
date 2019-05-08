@@ -17,19 +17,33 @@
 package uk.gov.hmrc.customs.datastore.controllers
 
 import javax.inject.{Inject, Singleton}
-
-import scala.concurrent.ExecutionContext
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
-import play.api.mvc._
-import uk.gov.hmrc.customs.datastore.services.EoriStore
 import play.api.libs.json.Json
+import play.api.mvc._
 import uk.gov.hmrc.customs.datastore.domain.EoriHistory._
+import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
+
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
-class HistoricEoriController @Inject()(eoriStore: EoriStore)(implicit ec: ExecutionContext) extends BaseController {
+class HistoricEoriController @Inject()(eoriStore: EoriStore, etmp: ETMPHistoryService)(implicit ec: ExecutionContext) extends BaseController {
 
-	def getEoriHistory(eori: String): Action[AnyContent] = Action.async { implicit request =>
-		eoriStore.getEori(eori).map(maybeEoriHistory => Ok(Json.toJson(maybeEoriHistory)))
-	}
+  def getEoriHistory(eori: String): Action[AnyContent] = Action.async { implicit request =>
+
+    eoriStore.getEori(eori)
+      .flatMap{maybeEoris =>
+        if (maybeEoris.isEmpty) {
+          etmp.getHistory(eori)
+            .map{ etmpData =>
+            eoriStore.saveEoris(etmpData)
+            etmpData
+          }
+        } else {
+          Future.successful(maybeEoris.get.eoris)
+        }
+      }
+      .map(history => Ok(Json.toJson(history)))
+
+  }
 
 }

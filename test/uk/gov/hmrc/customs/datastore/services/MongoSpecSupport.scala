@@ -22,11 +22,9 @@ import reactivemongo.api.{DefaultDB, FailoverStrategy}
 import reactivemongo.bson.BSONDocument
 import uk.gov.hmrc.mongo.MongoConnector
 
-import scala.concurrent.duration._
-
 trait MongoSpecSupport {
 
-  protected def mongoUri: String = s"mongodb://127.0.0.1:27017/customs-data-store"
+  protected def mongoUri: String = s"mongodb://127.0.0.1:27017/test-customs-data-store"
 
   implicit val mongoConnectorForTest: MongoConnector = MongoConnector(mongoUri)
 

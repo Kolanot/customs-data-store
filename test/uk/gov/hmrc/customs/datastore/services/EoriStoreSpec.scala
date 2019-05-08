@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.customs.datastore.services
 
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, MustMatchers, WordSpec}
+import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpec}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.datastore.domain.{EoriHistory, EoriHistoryResponse}
@@ -34,55 +34,50 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     override def mongoConnector: MongoConnector = mongoConnectorForTest
   }
   val cache = new EoriStore(reactiveMongo)
-  val eori1 = "EORI12345678"
+  val eori1 = "EORI00000001"
   val eori2 = "EORI00000002"
   val eori3 = "EORI00000003"
-
   val eori4 = "EORI00000004"
   val eori5 = "EORI00000005"
+  val eori6 = "EORI00000006"
+
+  val history1 = EoriHistory(eori1, Some("2001-01-20T00:00:00Z"), None)
+  val history2 = EoriHistory(eori2, Some("2002-01-20T00:00:00Z"), None)
+  val history3 = EoriHistory(eori3, Some("2003-01-20T00:00:00Z"), None)
+  val history4 = EoriHistory(eori4, Some("2004-01-20T00:00:00Z"), None)
+  val history5 = EoriHistory(eori5, Some("2005-01-20T00:00:00Z"), None)
+  val history6 = EoriHistory(eori6, Some("2006-01-20T00:00:00Z"), None)
+
 
   "EoriStore" should {
 
-    "put a single EORI into the database" in {
-      val newEori = EoriHistory(eori1, Some("1985-03-20T19:30:51Z"),None)
-      val result = for {
-        _ <- cache.addEori(newEori)
-        storedEori <- cache.getEori(eori1)
-      } yield storedEori
+    "add and update eoris" in {
+      val furueResult = for {
+        _ <- cache.saveEoris(Seq(history1, history2))
+        _ <- cache.saveEoris(Seq(history5, history6)) //To see if the select works correctly
+        eoris1 <- cache.getEori(history1.eori)
+        eoris2 <- cache.getEori(history2.eori)
+        _ <- cache.saveEoris(Seq(history1, history3))
+        eoris3 <- cache.getEori(history1.eori)
+        eoris4 <- cache.getEori(history3.eori)
+        _ <- cache.saveEoris(Seq(history3, history4))
+        eoris5 <- cache.getEori(history3.eori)
+        eoris6 <- cache.getEori(history4.eori)
+        eoris7 <- cache.getEori(history5.eori)
+        eoris8 <- cache.getEori(history6.eori)
+      } yield (eoris1, eoris2, eoris3, eoris4, eoris5, eoris6, eoris7, eoris8)
 
-      await(result) mustBe Some(EoriHistoryResponse(Seq(newEori)))
+      val result = await(furueResult)
+      result._1 mustBe Some(EoriHistoryResponse(Seq(history1, history2)))
+      result._2 mustBe Some(EoriHistoryResponse(Seq(history1, history2)))
+      result._3 mustBe Some(EoriHistoryResponse(Seq(history1, history3)))
+      result._4 mustBe Some(EoriHistoryResponse(Seq(history1, history3)))
+      result._5 mustBe Some(EoriHistoryResponse(Seq(history3, history4)))
+      result._6 mustBe Some(EoriHistoryResponse(Seq(history3, history4)))
+      result._7 mustBe Some(EoriHistoryResponse(Seq(history5, history6)))
+      result._8 mustBe Some(EoriHistoryResponse(Seq(history5, history6)))
     }
 
-    "getEori" in {
-      pending
-    }
-
-    "addEori" in {
-      pending
-    }
-
-    "associateEori" in {
-      val history1 = EoriHistory(eori1, Some("1985-01-20T19:30:51Z"),None)
-      val history2 = EoriHistory(eori2, Some("2000-02-20T19:30:51Z"),None)
-      val history3 = EoriHistory(eori3, Some("2015-03-20T19:30:51Z"),None)
-      val history4 = EoriHistory(eori4, Some("2019-04-20T19:30:51Z"),None)
-      val history5 = EoriHistory(eori5, Some("2019-05-20T19:30:51Z"),None)
-
-      val result = for {
-        _ <- cache.addEori(history1)
-        _ <- cache.associateEori(eori1, history2)
-        _ <- cache.associateEori(eori2, history3)
-
-        _ <- cache.addEori(history4)
-        _ <- cache.associateEori(eori4, history5)
-
-        history <- cache.getEori(eori3)
-      } yield history
-
-      val expectedHistory = EoriHistoryResponse(Seq(history1, history2, history3))
-
-      await(result) mustBe Some(expectedHistory)
-    }
   }
 
 }
