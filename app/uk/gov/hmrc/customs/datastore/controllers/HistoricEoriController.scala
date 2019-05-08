@@ -31,15 +31,16 @@ class HistoricEoriController @Inject()(eoriStore: EoriStore, etmp: ETMPHistorySe
   def getEoriHistory(eori: String): Action[AnyContent] = Action.async { implicit request =>
 
     eoriStore.getEori(eori)
-      .flatMap{maybeEoris =>
-        if (maybeEoris.isEmpty) {
-          etmp.getHistory(eori)
-            .map{ etmpData =>
-            eoriStore.saveEoris(etmpData)
-            etmpData
-          }
-        } else {
-          Future.successful(maybeEoris.get.eoris)
+      .flatMap { maybeEoris =>
+        maybeEoris match {
+          case None =>
+            etmp.getHistory(eori)
+              .map { etmpData =>
+                eoriStore.saveEoris(etmpData)
+                etmpData
+              }
+          case Some(eoris) =>
+            Future.successful(eoris.eoris)
         }
       }
       .map(history => Ok(Json.toJson(history)))
