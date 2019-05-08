@@ -35,7 +35,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ETMPHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSugar with DefaultAwaitTimeout with FutureAwaits {
 
-  protected def generateResponse(eoris:Seq[EORI]):HistoricEoriResponse = {
+  protected def generateResponse(eoris:Seq[Eori]):HistoricEoriResponse = {
     HistoricEoriResponse(
       GetEORIHistoryResponse(
         ResponseCommon("OK", LocalDate.now().toString),
@@ -44,10 +44,10 @@ class ETMPHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
     )
   }
 
-  def generateEoriHistory(allEoris:Seq[EORI]):Seq[EORIHistory] = {
+  def generateEoriHistory(allEoris:Seq[Eori]):Seq[EORIHistory] = {
     val dateCalculator = (years:Int) => "19XX-03-20T19:30:51Z".replaceAll("XX", (85 + allEoris.size - years).toString )
     @tailrec
-    def calcHistory(eoris:Seq[EORI], histories:Seq[EORIHistory]):Seq[EORIHistory] = {
+    def calcHistory(eoris:Seq[Eori], histories:Seq[EORIHistory]):Seq[EORIHistory] = {
       val eori = eoris.head
       eoris.size match {
         case 1 =>

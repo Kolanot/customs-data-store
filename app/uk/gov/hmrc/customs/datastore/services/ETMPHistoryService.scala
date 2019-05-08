@@ -19,7 +19,7 @@ package uk.gov.hmrc.customs.datastore.services
 import javax.inject.Inject
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain.HistoricEoriResponse._
-import uk.gov.hmrc.customs.datastore.domain.{EORI, EoriHistory, HistoricEoriResponse}
+import uk.gov.hmrc.customs.datastore.domain.{Eori, EoriHistory, HistoricEoriResponse}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
@@ -28,7 +28,7 @@ import scala.concurrent.Future
 
 class ETMPHistoryService @Inject()(appConfig:AppConfig, http: HttpClient) {
 
-  def getHistory(eori: EORI)(implicit hc: HeaderCarrier): Future[Seq[EoriHistory]] = {
+  def getHistory(eori: Eori)(implicit hc: HeaderCarrier): Future[Seq[EoriHistory]] = {
     http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}/$eori")
       .map { response =>
         response.getEORIHistoryResponse.responseDetail.EORIHistory.toSeq.map {

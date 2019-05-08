@@ -20,23 +20,17 @@ import play.api.libs.json.Json
 
 case class HistoricEoriResponse(getEORIHistoryResponse: GetEORIHistoryResponse)
 
-case class GetEORIHistoryResponse(
-                                   responseCommon: ResponseCommon,
-                                   responseDetail: ResponseDetail
-                                 )
+case class GetEORIHistoryResponse(responseCommon: ResponseCommon,
+                                  responseDetail: ResponseDetail)
 
-case class ResponseCommon(
-                           status: String,
-                           processingDate: String
-                         )
+case class ResponseCommon(status: String,
+                          processingDate: String)
 
 case class ResponseDetail(EORIHistory: Seq[EORIHistory])
 
-case class EORIHistory(
-                        EORI: EORI,
-                        validFrom: Option[String],
-                        validUntil: Option[String]
-                      )
+case class EORIHistory(EORI: Eori,
+                       validFrom: Option[String],
+                       validUntil: Option[String])
 
 object HistoricEoriResponse {
   implicit val eoriHistoryFormat = Json.format[EORIHistory]

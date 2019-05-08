@@ -24,7 +24,7 @@ import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
 import play.api.test.Helpers._
-import uk.gov.hmrc.customs.datastore.domain.{EORI, EoriHistory, EoriHistoryResponse}
+import uk.gov.hmrc.customs.datastore.domain.{Eori, EoriHistory, EoriHistoryResponse}
 import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
 import uk.gov.hmrc.http.HeaderCarrier
 

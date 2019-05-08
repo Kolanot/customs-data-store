@@ -18,6 +18,6 @@ package uk.gov.hmrc.customs.datastore
 
 package object domain {
 
-  type EORI = String
+  type Eori = String
 
 }
