@@ -76,7 +76,7 @@ class ETMPHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
     when(mockHttp.GET[HistoricEoriResponse](any())(any(),any(),any())).thenReturn(Future.successful(generateResponse(List(EORI1))))
 
     val  response = await(service.getHistory(EORI1))
-    response mustBe List(EoriHistory(EORI1,Some("1985-03-20T19:30:51Z"),None))
+    response mustBe List(EoriPeriod(EORI1,Some("1985-03-20T19:30:51Z"),None))
   }
 
 

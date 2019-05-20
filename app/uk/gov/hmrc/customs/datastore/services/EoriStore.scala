@@ -21,10 +21,10 @@ import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.customs.datastore.domain.{EoriHistory, TraderData}
+import uk.gov.hmrc.customs.datastore.domain.TraderData._
+import uk.gov.hmrc.customs.datastore.domain.{EoriPeriod, TraderData}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.customs.datastore.domain.TraderData._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -32,10 +32,10 @@ import scala.concurrent.Future
 
 class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
   extends {
-    val EoriFieldsName = classOf[EoriHistory].getDeclaredFields.apply(0).getName
-    val EorisFieldsName = classOf[TraderData].getDeclaredFields.apply(1).getName
-    val emails = classOf[TraderData].getDeclaredFields.apply(2).getName
-    val EoriSearchField = s"$EorisFieldsName.$EoriFieldsName"
+    val FieldEori = classOf[EoriPeriod].getDeclaredFields.apply(0).getName
+    val FieldEoriPeriods = classOf[TraderData].getDeclaredFields.apply(1).getName
+    val FieldEmails = classOf[TraderData].getDeclaredFields.apply(2).getName
+    val SearchKey = s"$FieldEoriPeriods.$FieldEori"
   }
     with ReactiveRepository[TraderData, BSONObjectID](
     collectionName = "dataStore",
@@ -46,18 +46,18 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
 
 
   override def indexes: Seq[Index] = Seq(
-    Index(Seq(EoriSearchField -> IndexType.Ascending), name = Some(EorisFieldsName + EoriFieldsName + "Index"), unique = true, sparse = true))
+    Index(Seq(SearchKey -> IndexType.Ascending), name = Some(FieldEoriPeriods + FieldEori + "Index"), unique = true, sparse = true))
 
-  def saveEoris(histories:Seq[EoriHistory]):Future[Any] = {
+  def saveEoris(eoriHistory:Seq[EoriPeriod]):Future[Any] = {
     findAndUpdate(
-      query = Json.obj(EoriSearchField -> Json.obj("$in" -> histories.map(_.eori))),
-      update = Json.obj("$setOnInsert" -> Json.obj(emails -> "[]"), "$set" -> Json.obj(EorisFieldsName -> Json.toJson(histories))),
+      query = Json.obj(SearchKey -> Json.obj("$in" -> eoriHistory.map(_.eori))),
+      update = Json.obj("$setOnInsert" -> Json.obj(FieldEmails -> Json.arr()), "$set" -> Json.obj(FieldEoriPeriods -> Json.toJson(eoriHistory))),
       upsert = true
     )
   }
 
   def getEori(eori: String): Future[Option[TraderData]] = {
-    find(EoriSearchField -> eori).map(_.headOption)
+    find(SearchKey -> eori).map(_.headOption)
   }
 
 }
