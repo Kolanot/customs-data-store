@@ -24,7 +24,7 @@ import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
 import play.api.test.Helpers._
-import uk.gov.hmrc.customs.datastore.domain.{Eori, EoriHistory, EoriHistoryResponse}
+import uk.gov.hmrc.customs.datastore.domain.{Eori, EoriHistory, TraderData}
 import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -51,7 +51,7 @@ class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with Default
       val eoriHistory = Seq(EoriHistory(eori, None, None))
       new HistoricControllerScenario() {
         when(mockEoriStore.getEori(is(eori)))
-          .thenReturn(Future.successful(Some(EoriHistoryResponse(eoriHistory))))
+          .thenReturn(Future.successful(Some(TraderData(None,eoriHistory,Seq.empty))))
         when(historyService.getHistory(is(eori))(any()))
           .thenReturn(Future.successful(Nil))
         val result = controller.getEoriHistory(eori)(fakeRequest)
@@ -65,12 +65,12 @@ class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with Default
       val eoriHistory = Seq(EoriHistory(eori, None, None))
       new HistoricControllerScenario() {
         when(mockEoriStore.getEori(is(eori)))
-          .thenReturn(Future.successful(Some(EoriHistoryResponse(eoriHistory))))
+          .thenReturn(Future.successful(Some(TraderData(None,eoriHistory,Seq.empty))))
         when(historyService.getHistory(is(eori))(any()))
           .thenReturn(Future.successful(Nil))
         await(controller.getEoriHistory(eori)(fakeRequest))
         verify(mockEoriStore).getEori(is(eori))
-        verify(mockEoriStore, never).saveEoris(any())
+        verify(mockEoriStore, never).insert(any())(any())
         verify(historyService, never).getHistory(is(eori))(any())
       }
     }
@@ -86,7 +86,7 @@ class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with Default
           .thenReturn(Future.successful(eoriHistory))
         await(controller.getEoriHistory(eori)(fakeRequest))
         verify(mockEoriStore).getEori(is(eori))
-        verify(mockEoriStore).saveEoris(any())
+        verify(mockEoriStore).insert(any())(any())
         verify(historyService).getHistory(is(eori))(any())
       }
     }

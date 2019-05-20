@@ -19,7 +19,8 @@ package uk.gov.hmrc.customs.datastore.controllers
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import play.api.mvc._
-import uk.gov.hmrc.customs.datastore.domain.EoriHistory._
+import uk.gov.hmrc.customs.datastore.domain.TraderData
+import uk.gov.hmrc.customs.datastore.domain.TraderData._
 import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
@@ -36,7 +37,8 @@ class HistoricEoriController @Inject()(eoriStore: EoriStore, etmp: ETMPHistorySe
           case None =>
             etmp.getHistory(eori)
               .map { etmpData =>
-                eoriStore.saveEoris(etmpData)
+                //eoriStore.saveEoris(etmpData)
+                eoriStore.insert(TraderData(None, etmpData, Nil))
                 etmpData
               }
           case Some(eoris) =>

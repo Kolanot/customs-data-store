@@ -21,9 +21,10 @@ import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.customs.datastore.domain.{EoriHistory, EoriHistoryResponse}
+import uk.gov.hmrc.customs.datastore.domain.{EoriHistory, TraderData}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.customs.datastore.domain.TraderData._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -32,13 +33,13 @@ import scala.concurrent.Future
 class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
   extends {
     val EoriFieldsName = classOf[EoriHistory].getDeclaredFields.apply(0).getName
-    val EorisFieldsName = classOf[EoriHistoryResponse].getDeclaredFields.apply(0).getName
+    val EorisFieldsName = classOf[TraderData].getDeclaredFields.apply(1).getName
     val EoriSearchField = s"$EorisFieldsName.$EoriFieldsName"
   }
-    with ReactiveRepository[EoriHistoryResponse, BSONObjectID](
+    with ReactiveRepository[TraderData, BSONObjectID](
     collectionName = "dataStore",
     mongo = mongoComponent.mongoConnector.db,
-    domainFormat = EoriHistory.eoriHistoryResponseFormat,
+    domainFormat = TraderData.traderDataFormat,
     idFormat = ReactiveMongoFormats.objectIdFormats
   ) {
 
@@ -54,7 +55,7 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
     )
   }
 
-  def getEori(eori: String): Future[Option[EoriHistoryResponse]] = {
+  def getEori(eori: String): Future[Option[TraderData]] = {
     find(EoriSearchField -> eori).map(_.headOption)
   }
 
