@@ -19,7 +19,8 @@ package uk.gov.hmrc.customs.datastore.services
 import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpec}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
-import uk.gov.hmrc.customs.datastore.domain.{EoriPeriod, TraderData, Email}
+import reactivemongo.api.commands.WriteResult
+import uk.gov.hmrc.customs.datastore.domain.{Email, EoriPeriod, TraderData}
 import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -27,13 +28,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with BeforeAndAfterEach {
 
   override def beforeEach: Unit = {
-    cache.drop
+    eoriStore.drop
   }
 
   val reactiveMongo = new ReactiveMongoComponent {
     override def mongoConnector: MongoConnector = mongoConnectorForTest
   }
-  val cache = new EoriStore(reactiveMongo)
+  val eoriStore = new EoriStore(reactiveMongo)
 
   val credentialId = Some("123456")
   val eori1 = "EORI00000001"
@@ -55,32 +56,36 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
 
   "EoriStore" should {
 
-    "add new eoris" in {
-      val futureResult = for {
-        _ <- cache.insert(TraderData(credentialId,Seq(period1, period2),Nil))
-        _ <- cache.insert(TraderData(credentialId,Seq(period5, period6),Nil)) //To see if the select works correctly
-        eoris1 <- cache.getEori(period1.eori)
-        eoris2 <- cache.getEori(period2.eori)
-      } yield (eoris1, eoris2)
+    "retrieve trader data with any of its historic eoris" in {
 
-      val result = await(futureResult)
-      val expectedResult = Some(TraderData(credentialId,Seq(period1, period2),Seq.empty))
-      result._1 mustBe expectedResult
-      result._2 mustBe expectedResult
+      val traderData1 = TraderData(credentialId, eoriHistory = Seq(period1, period2), emails = Nil)
+      val traderData2 = TraderData(credentialId, eoriHistory = Seq(period5, period6), emails = Nil)
+
+      def setupDBWith2Trader(): WriteResult = await {
+        eoriStore.insert(traderData1)
+        eoriStore.insert(traderData2)
+      }
+      def getTraderData1WithEori1() = await ( eoriStore.getEori(period1.eori) )
+      def getTraderData1WithEori2() = await ( eoriStore.getEori(period2.eori) )
+
+      setupDBWith2Trader()
+      getTraderData1WithEori1() mustBe Some(traderData1)
+      getTraderData1WithEori2() mustBe Some(traderData1)
+
     }
 
     "Gabor's complex test 2" in {
       val futureResult = for {
-        eoris1 <- cache.getEori(period1.eori)
-        eoris2 <- cache.getEori(period2.eori)
-        _ <- cache.saveEoris(Seq(period1, period3))
-        eoris3 <- cache.getEori(period1.eori)
-        eoris4 <- cache.getEori(period3.eori)
-        _ <- cache.saveEoris(Seq(period3, period4))
-        eoris5 <- cache.getEori(period3.eori)
-        eoris6 <- cache.getEori(period4.eori)
-        eoris7 <- cache.getEori(period5.eori)
-        eoris8 <- cache.getEori(period6.eori)
+        eoris1 <- eoriStore.getEori(period1.eori)
+        eoris2 <- eoriStore.getEori(period2.eori)
+        _ <- eoriStore.saveEoris(Seq(period1, period3))
+        eoris3 <- eoriStore.getEori(period1.eori)
+        eoris4 <- eoriStore.getEori(period3.eori)
+        _ <- eoriStore.saveEoris(Seq(period3, period4))
+        eoris5 <- eoriStore.getEori(period3.eori)
+        eoris6 <- eoriStore.getEori(period4.eori)
+        eoris7 <- eoriStore.getEori(period5.eori)
+        eoris8 <- eoriStore.getEori(period6.eori)
       } yield (eoris1, eoris2, eoris3, eoris4, eoris5, eoris6, eoris7, eoris8)
 
       val result = await(futureResult)
@@ -97,18 +102,18 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     "update eoris" in {
       val emails = Seq(Email("babyface", true))
       val furueResult = for {
-        _ <- cache.insert(TraderData(credentialId,Seq(period1, period2),emails))
-        _ <- cache.insert(TraderData(credentialId,Seq(period5, period6),Nil)) //To see if the select works correctly
-        eoris1 <- cache.getEori(period1.eori)
-        eoris2 <- cache.getEori(period2.eori)
-        _ <- cache.saveEoris(Seq(period1, period3))
-        eoris3 <- cache.getEori(period1.eori)
-        eoris4 <- cache.getEori(period3.eori)
-        _ <- cache.saveEoris(Seq(period3, period4))
-        eoris5 <- cache.getEori(period3.eori)
-        eoris6 <- cache.getEori(period4.eori)
-        eoris7 <- cache.getEori(period5.eori)
-        eoris8 <- cache.getEori(period6.eori)
+        _ <- eoriStore.insert(TraderData(credentialId,Seq(period1, period2),emails))
+        _ <- eoriStore.insert(TraderData(credentialId,Seq(period5, period6),Nil)) //To see if the select works correctly
+        eoris1 <- eoriStore.getEori(period1.eori)
+        eoris2 <- eoriStore.getEori(period2.eori)
+        _ <- eoriStore.saveEoris(Seq(period1, period3))
+        eoris3 <- eoriStore.getEori(period1.eori)
+        eoris4 <- eoriStore.getEori(period3.eori)
+        _ <- eoriStore.saveEoris(Seq(period3, period4))
+        eoris5 <- eoriStore.getEori(period3.eori)
+        eoris6 <- eoriStore.getEori(period4.eori)
+        eoris7 <- eoriStore.getEori(period5.eori)
+        eoris8 <- eoriStore.getEori(period6.eori)
       } yield (eoris1, eoris2, eoris3, eoris4, eoris5, eoris6, eoris7, eoris8)
 
       val result = await(furueResult)
