@@ -34,6 +34,7 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
   extends {
     val EoriFieldsName = classOf[EoriHistory].getDeclaredFields.apply(0).getName
     val EorisFieldsName = classOf[TraderData].getDeclaredFields.apply(1).getName
+    val emails = classOf[TraderData].getDeclaredFields.apply(2).getName
     val EoriSearchField = s"$EorisFieldsName.$EoriFieldsName"
   }
     with ReactiveRepository[TraderData, BSONObjectID](
@@ -50,7 +51,7 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
   def saveEoris(histories:Seq[EoriHistory]):Future[Any] = {
     findAndUpdate(
       query = Json.obj(EoriSearchField -> Json.obj("$in" -> histories.map(_.eori))),
-      update = Json.obj(EorisFieldsName -> Json.toJson(histories)),
+      update = Json.obj("$setOnInsert" -> Json.obj(emails -> "[]"), "$set" -> Json.obj(EorisFieldsName -> Json.toJson(histories))),
       upsert = true
     )
   }

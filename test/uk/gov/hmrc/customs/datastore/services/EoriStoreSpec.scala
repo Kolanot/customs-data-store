@@ -69,32 +69,32 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       result._2 mustBe expectedResult
     }
 
-//    "update eoris" in {
-//      val furueResult = for {
-//        _ <- cache.insert(TraderData(credentialId,Seq(history1, history2),Nil))
-//        _ <- cache.insert(TraderData(credentialId,Seq(history5, history6),Nil)) //To see if the select works correctly
-//        eoris1 <- cache.getEori(history1.eori)
-//        eoris2 <- cache.getEori(history2.eori)
-//        _ <- cache.saveEoris(Seq(history1, history3))
-//        eoris3 <- cache.getEori(history1.eori)
-//        eoris4 <- cache.getEori(history3.eori)
-//        _ <- cache.saveEoris(Seq(history3, history4))
-//        eoris5 <- cache.getEori(history3.eori)
-//        eoris6 <- cache.getEori(history4.eori)
-//        eoris7 <- cache.getEori(history5.eori)
-//        eoris8 <- cache.getEori(history6.eori)
-//      } yield (eoris1, eoris2, eoris3, eoris4, eoris5, eoris6, eoris7, eoris8)
-//
-//      val result = await(furueResult)
-//      result._1 mustBe Some(TraderData(credentialId,Seq(history1, history2),Seq.empty))
-//      result._2 mustBe Some(TraderData(credentialId,Seq(history1, history2),Seq.empty))
-//      result._3 mustBe Some(TraderData(credentialId,Seq(history1, history3),Seq.empty))
-//      result._4 mustBe Some(TraderData(credentialId,Seq(history1, history3),Seq.empty))
-//      result._5 mustBe Some(TraderData(credentialId,Seq(history3, history4),Seq.empty))
-//      result._6 mustBe Some(TraderData(credentialId,Seq(history3, history4),Seq.empty))
-//      result._7 mustBe Some(TraderData(credentialId,Seq(history5, history6),Seq.empty))
-//      result._8 mustBe Some(TraderData(credentialId,Seq(history5, history6),Seq.empty))
-//    }
+    "update eoris" in {
+      val furueResult = for {
+        _ <- cache.insert(TraderData(credentialId,Seq(history1, history2),Nil))
+        _ <- cache.insert(TraderData(credentialId,Seq(history5, history6),Nil)) //To see if the select works correctly
+        eoris1 <- cache.getEori(history1.eori)
+        eoris2 <- cache.getEori(history2.eori)
+        _ <- cache.saveEoris(Seq(history1, history3))
+        eoris3 <- cache.getEori(history1.eori)
+        eoris4 <- cache.getEori(history3.eori)
+        _ <- cache.saveEoris(Seq(history3, history4))
+        eoris5 <- cache.getEori(history3.eori)
+        eoris6 <- cache.getEori(history4.eori)
+        eoris7 <- cache.getEori(history5.eori)
+        eoris8 <- cache.getEori(history6.eori)
+      } yield (eoris1, eoris2, eoris3, eoris4, eoris5, eoris6, eoris7, eoris8)
+
+      val result = await(furueResult)
+      result._1 mustBe Some(TraderData(credentialId,Seq(history1, history2),Seq.empty))
+      result._2 mustBe Some(TraderData(credentialId,Seq(history1, history2),Seq.empty))
+      result._3 mustBe Some(TraderData(credentialId,Seq(history1, history3),Seq.empty))
+      result._4 mustBe Some(TraderData(credentialId,Seq(history1, history3),Seq.empty))
+      result._5 mustBe Some(TraderData(credentialId,Seq(history3, history4),Seq.empty))
+      result._6 mustBe Some(TraderData(credentialId,Seq(history3, history4),Seq.empty))
+      result._7 mustBe Some(TraderData(credentialId,Seq(history5, history6),Seq.empty))
+      result._8 mustBe Some(TraderData(credentialId,Seq(history5, history6),Seq.empty))
+    }
 
   }
 
