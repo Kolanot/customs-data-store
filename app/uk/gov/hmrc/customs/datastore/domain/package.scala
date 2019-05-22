@@ -19,5 +19,7 @@ package uk.gov.hmrc.customs.datastore
 package object domain {
 
   type Eori = String
+  type EmailAddress = String
+  type CredentialId = String
 
 }

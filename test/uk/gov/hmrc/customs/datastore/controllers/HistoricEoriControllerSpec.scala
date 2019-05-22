@@ -17,14 +17,14 @@
 package uk.gov.hmrc.customs.datastore.controllers
 
 import org.mockito.ArgumentMatchers.{eq => is, _}
-import org.mockito.Mockito.{verify, when, never}
+import org.mockito.Mockito.{never, verify, when}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import play.api.http.Status
 import play.api.libs.json.Json
-import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
 import play.api.test.Helpers._
-import uk.gov.hmrc.customs.datastore.domain.{Eori, EoriHistory, EoriHistoryResponse}
+import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
+import uk.gov.hmrc.customs.datastore.domain.{EoriPeriod, TraderData}
 import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -48,10 +48,10 @@ class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with Default
 
     "return correct JSON from the controller" in {
       val eori = "GB1234567890"
-      val eoriHistory = Seq(EoriHistory(eori, None, None))
+      val eoriHistory = Seq(EoriPeriod(eori, None, None))
       new HistoricControllerScenario() {
         when(mockEoriStore.getEori(is(eori)))
-          .thenReturn(Future.successful(Some(EoriHistoryResponse(eoriHistory))))
+          .thenReturn(Future.successful(Some(TraderData(None,eoriHistory,Seq.empty))))
         when(historyService.getHistory(is(eori))(any()))
           .thenReturn(Future.successful(Nil))
         val result = controller.getEoriHistory(eori)(fakeRequest)
@@ -62,15 +62,15 @@ class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with Default
 
     "return Eori from the cache, and not from HoDs" in {
       val eori = "GB1234567890"
-      val eoriHistory = Seq(EoriHistory(eori, None, None))
+      val eoriHistory = Seq(EoriPeriod(eori, None, None))
       new HistoricControllerScenario() {
         when(mockEoriStore.getEori(is(eori)))
-          .thenReturn(Future.successful(Some(EoriHistoryResponse(eoriHistory))))
+          .thenReturn(Future.successful(Some(TraderData(None,eoriHistory,Seq.empty))))
         when(historyService.getHistory(is(eori))(any()))
           .thenReturn(Future.successful(Nil))
         await(controller.getEoriHistory(eori)(fakeRequest))
         verify(mockEoriStore).getEori(is(eori))
-        verify(mockEoriStore, never).saveEoris(any())
+        verify(mockEoriStore, never).insert(any())(any())
         verify(historyService, never).getHistory(is(eori))(any())
       }
     }
@@ -78,7 +78,7 @@ class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with Default
 
     "request Eori history from HoDs when the cache is empty, and save it in the cache" in {
       val eori = "GB00000001"
-      val eoriHistory = Seq(EoriHistory(eori, Some("2001-01-20T00:00:00Z"), None))
+      val eoriHistory = Seq(EoriPeriod(eori, Some("2001-01-20T00:00:00Z"), None))
       new HistoricControllerScenario() {
         when(mockEoriStore.getEori(is(eori)))
           .thenReturn(Future.successful(None))
@@ -86,7 +86,7 @@ class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with Default
           .thenReturn(Future.successful(eoriHistory))
         await(controller.getEoriHistory(eori)(fakeRequest))
         verify(mockEoriStore).getEori(is(eori))
-        verify(mockEoriStore).saveEoris(any())
+        verify(mockEoriStore).insert(any())(any())
         verify(historyService).getHistory(is(eori))(any())
       }
     }

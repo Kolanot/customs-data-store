@@ -18,13 +18,20 @@ package uk.gov.hmrc.customs.datastore.domain
 
 import play.api.libs.json.Json
 
-case class EoriHistory(eori: String,
-                       validFrom: Option[String],
-                       validUntil: Option[String])
+case class EoriPeriod(eori: Eori,
+                      validFrom: Option[String],
+                      validUntil: Option[String])
 
-case class EoriHistoryResponse(eoris: Seq[EoriHistory])
+case class Email(address: EmailAddress,
+                 isValidated: Boolean)  //TODO Add some field to store default email
 
-object EoriHistory {
-  implicit val eoriHistoryFormat = Json.format[EoriHistory]
-  implicit val eoriHistoryResponseFormat = Json.format[EoriHistoryResponse]
+
+case class TraderData(credentialId: Option[CredentialId],
+                      eoriHistory: Seq[EoriPeriod],
+                      emails:Seq[Email])
+
+object TraderData {
+  implicit val eoriPeriodFormat = Json.format[EoriPeriod]
+  implicit val emailFormat = Json.format[Email]
+  implicit val traderDataFormat = Json.format[TraderData]
 }
