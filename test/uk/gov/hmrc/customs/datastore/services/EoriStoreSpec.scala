@@ -17,6 +17,8 @@
 package uk.gov.hmrc.customs.datastore.services
 
 import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpec}
+import play.api.libs.json.Json
+import play.api.libs.json.Json.JsValueWrapper
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
@@ -56,21 +58,27 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
 
   "EoriStore" should {
 
-    "retrieve trader data with any of its historic eoris" in {
+    "calculate defaults for trader with the provided field excluded" in {
+      import eoriStore._
+      eoriStore.defaultsWithout(FieldEoriHistory) mustBe Json.obj(FieldEori -> "", FieldEmails -> Json.arr())
+      eoriStore.defaultsWithout(FieldEmails) mustBe Json.obj(FieldEori -> "", FieldEoriHistory -> Json.arr())
+    }
 
-      val traderData1 = TraderData(credentialId, eoriHistory = Seq(period1, period2), emails = Nil)
-      val traderData2 = TraderData(credentialId, eoriHistory = Seq(period5, period6), emails = Nil)
+    "retrieve trader information with any of its historic eoris" in {
+
+      val trader1 = TraderData(credentialId, eoriHistory = Seq(period1, period2), emails = Nil)
+      val trader2 = TraderData(credentialId, eoriHistory = Seq(period5, period6), emails = Nil)
 
       def setupDBWith2Trader(): WriteResult = await {
-        eoriStore.insert(traderData1)
-        eoriStore.insert(traderData2)
+        eoriStore.insert(trader1)
+        eoriStore.insert(trader2)
       }
-      def getTraderData1WithEori1() = await ( eoriStore.getEori(period1.eori) )
-      def getTraderData1WithEori2() = await ( eoriStore.getEori(period2.eori) )
+      def getTrader1WithEori1() = await ( eoriStore.getEori(period1.eori) )
+      def getTrader1WithEori2() = await ( eoriStore.getEori(period2.eori) )
 
       setupDBWith2Trader()
-      getTraderData1WithEori1() mustBe Some(traderData1)
-      getTraderData1WithEori2() mustBe Some(traderData1)
+      getTrader1WithEori1() mustBe Some(trader1)
+      getTrader1WithEori2() mustBe Some(trader1)
 
     }
 
