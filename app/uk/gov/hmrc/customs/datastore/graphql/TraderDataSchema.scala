@@ -21,6 +21,7 @@ import sangria.schema._
 import uk.gov.hmrc.customs.datastore.domain.{Email, EoriPeriod, TraderData}
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.customs.datastore.services.EoriStore
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 @Singleton
 class TraderDataSchema @Inject()(eoriStore: EoriStore) {
@@ -33,8 +34,17 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) {
     Field(
       name = "trader",
       fieldType = ListType(TraderDataType),
-      resolve = _ => List(TraderData(Some("1234"), Seq(EoriPeriod("123123", Some("2001-01-20T00:00:00Z"), None)),Seq.empty))
+      resolve = _ => eoriStore.getEori("1234").map(_.toList)
+    ),
+    Field(
+      name = "findEmail",
+      fieldType = OptionType(TraderDataType),
+      arguments = List(
+        Argument("eori", StringType)
+      ),
+      resolve = sangriaContext => eoriStore.getEori(sangriaContext.args.arg[String]("eori"))
     )
+
   )
 
 }

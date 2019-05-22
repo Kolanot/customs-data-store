@@ -16,16 +16,19 @@
 
 package uk.gov.hmrc.customs.datastore.controllers
 
+import org.mockito.ArgumentMatchers._
+import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.words.MatcherWords
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.Helpers.{POST, contentAsString}
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
-import play.modules.reactivemongo.ReactiveMongoComponent
+import uk.gov.hmrc.customs.datastore.domain.{Email, Eori, EoriPeriod, TraderData}
 import uk.gov.hmrc.customs.datastore.graphql.{GraphQL, TraderDataSchema}
 import uk.gov.hmrc.customs.datastore.services.{EoriStore, MongoSpecSupport}
-import uk.gov.hmrc.mongo.MongoConnector
+
+import scala.concurrent.Future
 
 
 class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with MockitoSugar with MatcherWords{
@@ -41,18 +44,25 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
   "GraphQLController" should {
     "Return TraderData" in new GraphQLScenario() {
-      val query = Json.parse("""{ "query": "query { trader { credentialId  } }"}""")
-      val request = FakeRequest(POST, "/graphql").withHeaders(("Content-Type", "application/json")).withBody(query)
+      val eoriNumber:Eori = "GB12345678"
+      val emailAddress = "abc@goodmail.com"
+      val traderData = TraderData(
+        Some("1234"),
+        Seq(EoriPeriod(eoriNumber, Some("2001-01-20T00:00:00Z"), None)),
+        Seq(Email(emailAddress, true)))
+      when(mockEoriStore.getEori(any())).thenReturn(Future.successful(Option(traderData)) )
+      val query = s"""{ "query": "query { findEmail( eori: \\"$eoriNumber\\") { emails { address }  } }"}"""
+      println(query)
+      val request = FakeRequest(POST, "/graphql").withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
 
       val futureResult = controller.graphqlBody.apply(request)
 
       val result = contentAsString(futureResult)
-
       result must include("data")
       result mustNot include("errors")
 
-      val maybeCredentialId = Json.parse(result).as[JsObject] \\ "credentialId"
-      maybeCredentialId.head mustBe JsString("1234")
+      val maybeCredentialId = Json.parse(result).as[JsObject] \\ "address"
+      maybeCredentialId.head mustBe JsString(emailAddress)
     }
   }
 
