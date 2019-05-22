@@ -20,9 +20,10 @@ import sangria.macros.derive.{ObjectTypeName, deriveObjectType}
 import sangria.schema._
 import uk.gov.hmrc.customs.datastore.domain.{Email, EoriPeriod, TraderData}
 import javax.inject.{Inject, Singleton}
+import uk.gov.hmrc.customs.datastore.services.EoriStore
 
 @Singleton
-class TraderDataSchema {
+class TraderDataSchema @Inject()(eoriStore: EoriStore) {
 
   implicit val EoriHistoryType: ObjectType[Unit, EoriPeriod] = deriveObjectType[Unit, EoriPeriod](ObjectTypeName("EoriHistory"))
   implicit val EmailType: ObjectType[Unit, Email] = deriveObjectType[Unit, Email](ObjectTypeName("Email"))

@@ -32,8 +32,8 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-
-class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
+@Singleton
+class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
   extends {
     val FieldEori = classOf[EoriPeriod].getDeclaredFields.apply(0).getName
     val FieldEoriHistory = classOf[TraderData].getDeclaredFields.apply(1).getName

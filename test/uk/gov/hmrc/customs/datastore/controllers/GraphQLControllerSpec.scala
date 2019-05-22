@@ -22,14 +22,19 @@ import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.Helpers.{POST, contentAsString}
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
+import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.datastore.graphql.{GraphQL, TraderDataSchema}
+import uk.gov.hmrc.customs.datastore.services.{EoriStore, MongoSpecSupport}
+import uk.gov.hmrc.mongo.MongoConnector
 
 
-class GraphQLControllerSpec extends PlaySpec with DefaultAwaitTimeout with FutureAwaits with MockitoSugar with MatcherWords{
+class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with MockitoSugar with MatcherWords{
 
   class GraphQLScenario() {
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
-    val schema = new TraderDataSchema()
+
+    val mockEoriStore = mock[EoriStore]
+    val schema = new TraderDataSchema(mockEoriStore)
     val graphQL = new GraphQL(schema)
     val controller = new GraphQLController(graphQL)
   }

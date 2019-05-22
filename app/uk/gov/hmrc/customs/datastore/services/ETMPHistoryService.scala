@@ -26,6 +26,7 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+//Call MDG to retrieve the latest historic Eori's for a given Eori from ETMP
 class ETMPHistoryService @Inject()(appConfig:AppConfig, http: HttpClient) {
 
   def getHistory(eori: Eori)(implicit hc: HeaderCarrier): Future[Seq[EoriPeriod]] = {
