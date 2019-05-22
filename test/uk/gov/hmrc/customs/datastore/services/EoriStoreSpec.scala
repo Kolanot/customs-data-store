@@ -18,11 +18,10 @@ package uk.gov.hmrc.customs.datastore.services
 
 import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpec}
 import play.api.libs.json.Json
-import play.api.libs.json.Json.JsValueWrapper
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
-import uk.gov.hmrc.customs.datastore.domain.{Email, Eori, EoriPeriod, TraderData}
+import uk.gov.hmrc.customs.datastore.domain.{Email, EmailAddress, Eori, EoriPeriod, TraderData}
 import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -30,7 +29,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with BeforeAndAfterEach {
 
   override def beforeEach: Unit = {
-    eoriStore.drop
+    await(eoriStore.drop)
   }
 
   val reactiveMongo = new ReactiveMongoComponent {
@@ -58,12 +57,6 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
 
   "EoriStore" should {
 
-    "calculate defaults for trader with the provided field excluded" in {
-      import eoriStore._
-      eoriStore.defaultsWithout(FieldEoriHistory) mustBe Json.obj(FieldEmails -> Json.arr())
-      eoriStore.defaultsWithout(FieldEmails) mustBe Json.obj(FieldEoriHistory -> Json.arr())
-    }
-
     "retrieve trader information with any of its historic eoris" in {
 
       val trader1 = TraderData(credentialId, eoriHistory = Seq(period1, period2), emails = Nil)
@@ -73,12 +66,12 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
         eoriStore.insert(trader1)
         eoriStore.insert(trader2)
       }
-      def getTrader1WithEori1() = await ( eoriStore.getEori(period1.eori) )
-      def getTrader1WithEori2() = await ( eoriStore.getEori(period2.eori) )
+      def getTraderWithEori1() = await ( eoriStore.getEori(period1.eori) )
+      def getTraderWithEori2() = await ( eoriStore.getEori(period2.eori) )
 
       setupDBWith2Trader()
-      getTrader1WithEori1() mustBe Some(trader1)
-      getTrader1WithEori2() mustBe Some(trader1)
+      getTraderWithEori1() mustBe Some(trader1)
+      getTraderWithEori2() mustBe Some(trader1)
 
     }
 
@@ -135,7 +128,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       result._8 mustBe Some(TraderData(credentialId,Seq(period5, period6),Seq.empty))
     }
 
-    "save and retreive email" in {
+    "save and retrieve email" in {
       val email = "a.b@example.com"
       await(eoriStore.saveEmail(eori1, email))
 
@@ -145,6 +138,16 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
 
     "update email" in {
       pending
+      val email1: EmailAddress = "foo"
+      val email2: EmailAddress = "bar"
+      await(eoriStore.insert(TraderData(credentialId, Seq(period1, period2),Seq(Email(email1, true)))))
+
+      val result1 = await(eoriStore.getEmail(period1.eori))
+      result1 mustBe Seq(email1, email2)
+
+      val result2 = await(eoriStore.getEmail(period2.eori))
+      result2 mustBe Seq(email1, email2)
+
     }
 
   }
