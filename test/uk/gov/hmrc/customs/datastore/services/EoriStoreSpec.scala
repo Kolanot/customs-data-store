@@ -17,11 +17,10 @@
 package uk.gov.hmrc.customs.datastore.services
 
 import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpec}
-import play.api.libs.json.Json
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
-import uk.gov.hmrc.customs.datastore.domain.{Email, EmailAddress, Eori, EoriPeriod, TraderData}
+import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -129,7 +128,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     }
 
     "save and retrieve email" in {
-      val email = "a.b@example.com"
+      val email = Email("a.b@example.com", false)
       await(eoriStore.saveEmail(eori1, email))
 
       val result = await(eoriStore.getEmail(eori1))
@@ -137,17 +136,31 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     }
 
     "update email" in {
-      pending
-      val email1: EmailAddress = "foo"
-      val email2: EmailAddress = "bar"
-      await(eoriStore.insert(TraderData(credentialId, Seq(period1, period2),Seq(Email(email1, true)))))
+      val email1 = Email("email1", true)
+      val email2 = Email("email2", true)
+      val email3 = Email("email3", true)
+      await(eoriStore.insert(TraderData(credentialId, Seq(period1, period2),Seq(email1))))
 
+      // save email already in DB
+      await(eoriStore.saveEmail(eori1, email1))
+
+      // save email2 to eori2
+      await(eoriStore.saveEmail(eori2, email2))
+
+      // get emails with eori1
       val result1 = await(eoriStore.getEmail(period1.eori))
       result1 mustBe Seq(email1, email2)
 
+      // get emails with eori2
       val result2 = await(eoriStore.getEmail(period2.eori))
       result2 mustBe Seq(email1, email2)
 
+      // save email3 to eori2
+      await(eoriStore.saveEmail(eori2, email3))
+
+      // get emails with eori1
+      val result3 = await(eoriStore.getEmail(period1.eori))
+      result3 mustBe Seq(email1, email2, email3)
     }
 
   }

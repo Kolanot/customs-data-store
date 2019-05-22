@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.customs.datastore.services
 
-import java.security.InvalidParameterException
-
 import javax.inject._
 import play.api.libs.json.Json
 import play.api.libs.json.Json._
@@ -62,16 +60,16 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     find(SearchKey -> eori).map(_.headOption)
   }
 
-  def getEmail(eori: Eori): Future[Seq[EmailAddress]] = {
-    find(SearchKey -> eori).map(_.headOption).map(traderData => traderData.map(_.emails.map(_.address)).getOrElse(Nil))
+  def getEmail(eori: Eori): Future[Seq[Email]] = {
+    find(SearchKey -> eori).map(_.headOption).map(traderData => traderData.map(_.emails).getOrElse(Nil))
   }
 
-  def saveEmail(eori: Eori, email: EmailAddress): Future[Any] = {
+  def saveEmail(eori: Eori, email: Email): Future[Any] = {
     findAndUpdate(
       query = Json.obj(SearchKey -> eori),
       update = Json.obj(
         "$setOnInsert" -> Json.obj(FieldEoriHistory -> Json.arr(Json.obj(FieldEori -> eori))),
-        "$addToSet" -> Json.obj(FieldEmails -> Email(email, false))),
+        "$addToSet" -> Json.obj(FieldEmails -> email)),
       upsert = true
     )
   }
