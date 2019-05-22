@@ -28,7 +28,7 @@ class TraderDataSchema {
 
   val Queries: List[Field[Unit, Unit]] = List(
     Field(
-      name = "posts",
+      name = "trader",
       fieldType = ListType(TraderDataType),
       resolve = _ => List(TraderData(Some("1234"), Seq(EoriPeriod("123123", Some("2001-01-20T00:00:00Z"), None)),Seq.empty))
     )

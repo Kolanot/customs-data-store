@@ -71,7 +71,7 @@ class ETMPHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
     implicit val hc: HeaderCarrier = HeaderCarrier()
   }
 
-  it should "work" in new ETMPScenario {
+  "The history service" should "return a single eori history entry" in new ETMPScenario {
     val EORI1 = "GB0000000001"
     when(mockHttp.GET[HistoricEoriResponse](any())(any(),any(),any())).thenReturn(Future.successful(generateResponse(List(EORI1))))
 
