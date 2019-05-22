@@ -16,20 +16,12 @@
 
 package uk.gov.hmrc.customs.datastore.graphql
 
-import com.google.inject.Inject
-//import graphql.schemas.PostSchema
+import javax.inject.{Inject, Singleton}
 import sangria.schema.{ObjectType, fields}
 
-/**
-  * Base component for the GraphQL schema.
-  *
-  * @param postSchema an object containing all queries and mutations to work with the entity of 'Post'
-  */
+@Singleton()
 class GraphQL @Inject()(traderSchema: TraderDataSchema) {
-  /**
-    * Contains a graphql schema of the entire application.
-    * We can add queries, mutations, etc. for each model.
-    */
+
   val schema = sangria.schema.Schema(
     query = ObjectType("Query",
       fields(

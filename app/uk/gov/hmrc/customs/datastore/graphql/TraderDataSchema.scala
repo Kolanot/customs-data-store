@@ -19,7 +19,9 @@ package uk.gov.hmrc.customs.datastore.graphql
 import sangria.macros.derive.{ObjectTypeName, deriveObjectType}
 import sangria.schema._
 import uk.gov.hmrc.customs.datastore.domain.{Email, EoriPeriod, TraderData}
+import javax.inject.{Inject, Singleton}
 
+@Singleton
 class TraderDataSchema {
 
   implicit val EoriHistoryType: ObjectType[Unit, EoriPeriod] = deriveObjectType[Unit, EoriPeriod](ObjectTypeName("EoriHistory"))

@@ -18,6 +18,10 @@ package uk.gov.hmrc.customs.datastore.domain
 
 import play.api.libs.json.Json
 
+/*
+ * on the wire format data models for the MDG Sub 21 request, which returns historic Eoris for a given Eori
+ */
+
 case class HistoricEoriResponse(getEORIHistoryResponse: GetEORIHistoryResponse)
 
 case class GetEORIHistoryResponse(responseCommon: ResponseCommon,
