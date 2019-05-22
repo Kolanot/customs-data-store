@@ -22,7 +22,7 @@ import play.api.libs.json.Json.JsValueWrapper
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
-import uk.gov.hmrc.customs.datastore.domain.{Email, EoriPeriod, TraderData}
+import uk.gov.hmrc.customs.datastore.domain.{Email, Eori, EoriPeriod, TraderData}
 import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -39,12 +39,12 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
   val eoriStore = new EoriStore(reactiveMongo)
 
   val credentialId = Some("123456")
-  val eori1 = "EORI00000001"
-  val eori2 = "EORI00000002"
-  val eori3 = "EORI00000003"
-  val eori4 = "EORI00000004"
-  val eori5 = "EORI00000005"
-  val eori6 = "EORI00000006"
+  val eori1: Eori = "EORI00000001"
+  val eori2: Eori = "EORI00000002"
+  val eori3: Eori = "EORI00000003"
+  val eori4: Eori = "EORI00000004"
+  val eori5: Eori = "EORI00000005"
+  val eori6: Eori = "EORI00000006"
 
 
   val period1 = EoriPeriod(eori1, Some("2001-01-20T00:00:00Z"), None)
@@ -60,8 +60,8 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
 
     "calculate defaults for trader with the provided field excluded" in {
       import eoriStore._
-      eoriStore.defaultsWithout(FieldEoriHistory) mustBe Json.obj(FieldEori -> "", FieldEmails -> Json.arr())
-      eoriStore.defaultsWithout(FieldEmails) mustBe Json.obj(FieldEori -> "", FieldEoriHistory -> Json.arr())
+      eoriStore.defaultsWithout(FieldEoriHistory) mustBe Json.obj(FieldEmails -> Json.arr())
+      eoriStore.defaultsWithout(FieldEmails) mustBe Json.obj(FieldEoriHistory -> Json.arr())
     }
 
     "retrieve trader information with any of its historic eoris" in {
@@ -135,18 +135,12 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       result._8 mustBe Some(TraderData(credentialId,Seq(period5, period6),Seq.empty))
     }
 
-    "insert email" in {
-      pending
-//      val expectedEmail = "a.b@example.com"
-//      cache.saveEmail(credentialId, expectedEmail)
-//
-//      val email = for {
-//        email <- cache.getEmail(credentialId)
-//      } yield email
-//
-//      val result = await(email)
-//
-//      result mustBe expectedEmail
+    "save and retreive email" in {
+      val email = "a.b@example.com"
+      await(eoriStore.saveEmail(eori1, email))
+
+      val result = await(eoriStore.getEmail(eori1))
+      result mustBe Seq(email)
     }
 
     "update email" in {

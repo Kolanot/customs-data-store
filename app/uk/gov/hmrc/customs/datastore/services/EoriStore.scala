@@ -25,7 +25,7 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.datastore.domain.TraderData._
-import uk.gov.hmrc.customs.datastore.domain.{EoriPeriod, TraderData}
+import uk.gov.hmrc.customs.datastore.domain.{Email, EmailAddress, Eori, EoriPeriod, TraderData}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -63,9 +63,24 @@ class EoriStore  @Inject()(mongoComponent: ReactiveMongoComponent)
   }
 
   def defaultsWithout(field: String) = field match {
-    case FieldEoriHistory => Json.obj(FieldEori -> JsString(""), FieldEmails -> Json.arr())
-    case FieldEmails => Json.obj(FieldEori -> "", FieldEoriHistory -> Json.arr())
+    case FieldEoriHistory => Json.obj(FieldEmails -> Json.arr())
+    case FieldEmails => Json.obj(FieldEoriHistory -> Json.arr())
     case _ => throw new InvalidParameterException(s"unknown field: $field")
+  }
+
+  def getEmail(eori: Eori): Future[Seq[EmailAddress]] = {
+    find(FieldEori -> eori).map(_.headOption).map(traderData => traderData.map(_.emails.map(_.address)).getOrElse(Nil))
+  }
+
+  def saveEmail(eori: Eori, email: EmailAddress): Future[Any] = {
+    findAndUpdate(
+      query = Json.obj(SearchKey -> eori),
+      update = Json.obj(
+        "$setOnInsert" -> defaultsWithout(FieldEmails),
+        "$set" -> Json.obj(FieldEori -> eori),
+        "$addToSet" -> Json.obj(FieldEmails -> Email(email, false))),
+      upsert = true
+    )
   }
 
 }
