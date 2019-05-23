@@ -44,7 +44,30 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) {
       ),
       resolve = sangriaContext => eoriStore.getTraderDate(sangriaContext.args.arg[String]("eori"))
     )
-
   )
+
+  /**
+    * List of mutations to work with the entity of TraderData.
+    */
+  val Mutations: List[Field[Unit, Unit]] = List(
+    Field(
+      name = "addTrader",
+      fieldType = BooleanType,
+      arguments = List(
+        Argument("credentialId", StringType),
+        Argument("eori", StringType),
+        Argument("email", StringType),
+        Argument("isValidated", BooleanType)
+      ),
+      resolve = sangriaContext =>
+        eoriStore.rosmInsert(
+          sangriaContext.args.arg[String]("credentialId"),
+          sangriaContext.args.arg[String]("eori"),
+          sangriaContext.args.arg[String]("email"),
+          sangriaContext.args.arg[Boolean]("isValidated")
+        )
+    )
+  )
+
 
 }

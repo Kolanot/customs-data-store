@@ -24,7 +24,7 @@ import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.Helpers.{POST, contentAsString}
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
-import uk.gov.hmrc.customs.datastore.domain.{Email, Eori, EoriPeriod, TraderData}
+import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.graphql.{GraphQL, TraderDataSchema}
 import uk.gov.hmrc.customs.datastore.services.{EoriStore, MongoSpecSupport}
 
@@ -52,12 +52,8 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
         Seq(Email(emailAddress, true)))
       when(mockEoriStore.getTraderDate(any())).thenReturn(Future.successful(Option(traderData)) )
       val query = s"""{ "query": "query { findEmail( eori: \\"$eoriNumber\\") { emails { address }  } }"}"""
-      println(query)
       val request = FakeRequest(POST, "/graphql").withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
-
-      val futureResult = controller.graphqlBody.apply(request)
-
-      val result = contentAsString(futureResult)
+      val result = contentAsString(controller.graphqlBody.apply(request))
       result must include("data")
       result mustNot include("errors")
 
@@ -65,8 +61,17 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       maybeCredentialId.head mustBe JsString(emailAddress)
     }
 
-    "" in new GraphQLScenario() {
+    "Insert new trader into our database" in new GraphQLScenario() {
+      val credentialId:CredentialId = "1111111"
+      val eoriNumber:Eori = "GB12345678"
+      val emailAddress = "abc@goodmail.com"
+      when(mockEoriStore.rosmInsert(any(),any(),any(),any())).thenReturn(Future.successful(true))
+      val query = s"""{"query" : "mutation {addTrader(credentialId:\\"$credentialId\\" eori:\\"$eoriNumber\\" email:\\"$emailAddress\\" isValidated:true )}" }"""
+      val request = FakeRequest(POST, "/graphql").withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
+      val result = contentAsString(controller.graphqlBody.apply(request))
 
+      result must include("data")
+      result mustNot include("errors")
     }
 
   }

@@ -27,14 +27,13 @@ class GraphQL @Inject()(traderSchema: TraderDataSchema) {
       fields(
         traderSchema.Queries: _*
       )
+    ),
+    mutation = Some(
+      ObjectType("Mutation",
+        fields(
+          traderSchema.Mutations: _*
+        )
+      )
     )
-
-//    mutation = Some(
-//      ObjectType("Mutation",
-//        fields(
-//          //postSchema.Mutations: _*
-//        )
-//      )
-//    )
   )
 }

@@ -74,4 +74,10 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     )
   }
 
+  //When someone registered for a new Eori, they will call this endpoint to save the data
+  def rosmInsert(credId:CredentialId, eori:Eori, email: String, isValidated:Boolean):Future[Boolean] = {
+    //TODO
+    Future.successful(true)
+  }
+
 }
