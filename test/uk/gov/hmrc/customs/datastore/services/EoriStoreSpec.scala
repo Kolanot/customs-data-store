@@ -65,8 +65,8 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
         eoriStore.insert(trader1)
         eoriStore.insert(trader2)
       }
-      def getTraderWithEori1() = await ( eoriStore.getEori(period1.eori) )
-      def getTraderWithEori2() = await ( eoriStore.getEori(period2.eori) )
+      def getTraderWithEori1() = await ( eoriStore.getTraderDate(period1.eori) )
+      def getTraderWithEori2() = await ( eoriStore.getTraderDate(period2.eori) )
 
       setupDBWith2Trader()
       getTraderWithEori1() mustBe Some(trader1)
@@ -76,16 +76,16 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
 
     "Complex email upsert test with empty database" in {
       val futureResult = for {
-        eoris1 <- eoriStore.getEori(period1.eori)
-        eoris2 <- eoriStore.getEori(period2.eori)
+        eoris1 <- eoriStore.getTraderDate(period1.eori)
+        eoris2 <- eoriStore.getTraderDate(period2.eori)
         _ <- eoriStore.saveEoris(Seq(period1, period3))
-        eoris3 <- eoriStore.getEori(period1.eori)
-        eoris4 <- eoriStore.getEori(period3.eori)
+        eoris3 <- eoriStore.getTraderDate(period1.eori)
+        eoris4 <- eoriStore.getTraderDate(period3.eori)
         _ <- eoriStore.saveEoris(Seq(period3, period4))
-        eoris5 <- eoriStore.getEori(period3.eori)
-        eoris6 <- eoriStore.getEori(period4.eori)
-        eoris7 <- eoriStore.getEori(period5.eori)
-        eoris8 <- eoriStore.getEori(period6.eori)
+        eoris5 <- eoriStore.getTraderDate(period3.eori)
+        eoris6 <- eoriStore.getTraderDate(period4.eori)
+        eoris7 <- eoriStore.getTraderDate(period5.eori)
+        eoris8 <- eoriStore.getTraderDate(period6.eori)
       } yield (eoris1, eoris2, eoris3, eoris4, eoris5, eoris6, eoris7, eoris8)
 
       val result = await(futureResult)
@@ -104,16 +104,16 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       val furueResult = for {
         _ <- eoriStore.insert(TraderData(credentialId,Seq(period1, period2),emails))
         _ <- eoriStore.insert(TraderData(credentialId,Seq(period5, period6),Nil)) //To see if the select works correctly
-        eoris1 <- eoriStore.getEori(period1.eori)
-        eoris2 <- eoriStore.getEori(period2.eori)
+        eoris1 <- eoriStore.getTraderDate(period1.eori)
+        eoris2 <- eoriStore.getTraderDate(period2.eori)
         _ <- eoriStore.saveEoris(Seq(period1, period3))
-        eoris3 <- eoriStore.getEori(period1.eori)
-        eoris4 <- eoriStore.getEori(period3.eori)
+        eoris3 <- eoriStore.getTraderDate(period1.eori)
+        eoris4 <- eoriStore.getTraderDate(period3.eori)
         _ <- eoriStore.saveEoris(Seq(period3, period4))
-        eoris5 <- eoriStore.getEori(period3.eori)
-        eoris6 <- eoriStore.getEori(period4.eori)
-        eoris7 <- eoriStore.getEori(period5.eori)
-        eoris8 <- eoriStore.getEori(period6.eori)
+        eoris5 <- eoriStore.getTraderDate(period3.eori)
+        eoris6 <- eoriStore.getTraderDate(period4.eori)
+        eoris7 <- eoriStore.getTraderDate(period5.eori)
+        eoris8 <- eoriStore.getTraderDate(period6.eori)
       } yield (eoris1, eoris2, eoris3, eoris4, eoris5, eoris6, eoris7, eoris8)
 
       val result = await(furueResult)

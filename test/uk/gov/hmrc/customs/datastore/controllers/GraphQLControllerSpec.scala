@@ -43,14 +43,14 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
   }
 
   "GraphQLController" should {
-    "Return TraderData" in new GraphQLScenario() {
+    "Return trader's email for a given Eori" in new GraphQLScenario() {
       val eoriNumber:Eori = "GB12345678"
       val emailAddress = "abc@goodmail.com"
       val traderData = TraderData(
         Some("1234"),
         Seq(EoriPeriod(eoriNumber, Some("2001-01-20T00:00:00Z"), None)),
         Seq(Email(emailAddress, true)))
-      when(mockEoriStore.getEori(any())).thenReturn(Future.successful(Option(traderData)) )
+      when(mockEoriStore.getTraderDate(any())).thenReturn(Future.successful(Option(traderData)) )
       val query = s"""{ "query": "query { findEmail( eori: \\"$eoriNumber\\") { emails { address }  } }"}"""
       println(query)
       val request = FakeRequest(POST, "/graphql").withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
@@ -64,6 +64,12 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val maybeCredentialId = Json.parse(result).as[JsObject] \\ "address"
       maybeCredentialId.head mustBe JsString(emailAddress)
     }
+
+    "" in new GraphQLScenario() {
+
+    }
+
   }
+
 
 }

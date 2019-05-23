@@ -56,12 +56,12 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     )
   }
 
-  def getEori(eori: String): Future[Option[TraderData]] = {
+  def getTraderDate(eori: Eori): Future[Option[TraderData]] = {
     find(SearchKey -> eori).map(_.headOption)
   }
 
   def getEmail(eori: Eori): Future[Seq[Email]] = {
-    find(SearchKey -> eori).map(_.headOption).map(traderData => traderData.map(_.emails).getOrElse(Nil))
+    getTraderDate(eori).map(traderData => traderData.map(_.emails).getOrElse(Nil))
   }
 
   def saveEmail(eori: Eori, email: Email): Future[Any] = {

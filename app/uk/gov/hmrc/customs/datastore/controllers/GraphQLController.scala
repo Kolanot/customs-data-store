@@ -44,7 +44,6 @@ class GraphQLController @Inject()(graphQL: GraphQL)
 //  /**
 //    * Renders an page with an in-browser IDE for exploring GraphQL.
 //    */
-//  def graphiql = Action(Ok(views.html.graphiql()))
 
   /**
     * Parses graphql body of incoming request.
