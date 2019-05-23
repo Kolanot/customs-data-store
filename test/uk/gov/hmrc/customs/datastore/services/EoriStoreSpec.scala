@@ -74,7 +74,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
 
     }
 
-    "Gabor's complex test 2" in {
+    "Complex email upsert test with empty database" in {
       val futureResult = for {
         eoris1 <- eoriStore.getEori(period1.eori)
         eoris2 <- eoriStore.getEori(period2.eori)
@@ -99,8 +99,8 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       result._8 mustBe None
     }
 
-    "update eoris" in {
-      val emails = Seq(Email("babyface", true))
+    "Complex email upsert test with preloaded data" in {
+      val emails = Seq(Email("a.b@mail.com", true))
       val furueResult = for {
         _ <- eoriStore.insert(TraderData(credentialId,Seq(period1, period2),emails))
         _ <- eoriStore.insert(TraderData(credentialId,Seq(period5, period6),Nil)) //To see if the select works correctly
