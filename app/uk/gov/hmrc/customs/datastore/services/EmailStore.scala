@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.customs.datastore.services
 
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.datastore.domain.{EmailAddress, Eori, SubscriptionEmail}
@@ -26,6 +26,7 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.{ExecutionContext, Future}
 
+@Singleton
 class EmailStore @Inject()(mongoComponent: ReactiveMongoComponent)
   extends ReactiveRepository[SubscriptionEmail, BSONObjectID](
     collectionName = "emailStore",
