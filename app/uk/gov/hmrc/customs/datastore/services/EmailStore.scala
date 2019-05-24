@@ -34,6 +34,7 @@ class EmailStore @Inject()(mongoComponent: ReactiveMongoComponent)
     idFormat = ReactiveMongoFormats.objectIdFormats
   ) {
 
+  //Added this to replicate implementation in customs-manage-subscription
   def save(eori: Eori, email: EmailAddress)(implicit ec: ExecutionContext): Future[Any] = {
     findAndUpdate(
       query = Json.obj("_id" -> eori),
