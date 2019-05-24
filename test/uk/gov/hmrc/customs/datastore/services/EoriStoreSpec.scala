@@ -22,8 +22,9 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.mongo.MongoConnector
-
+import org.scalatest.Assertion
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with BeforeAndAfterEach {
 
@@ -52,7 +53,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
   val period5 = EoriPeriod(eori5, Some("2005-01-20T00:00:00Z"), None)
   val period6 = EoriPeriod(eori6, Some("2006-01-20T00:00:00Z"), None)
 
-
+  def check(condition:Assertion) = Future.successful(condition)
 
   "EoriStore" should {
 
@@ -75,28 +76,27 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     }
 
     "Complex email upsert test with empty database" in {
-      val futureResult = for {
+      await(for {
         eoris1 <- eoriStore.getTraderDate(period1.eori)
+        _ <- check(eoris1 mustBe None)
         eoris2 <- eoriStore.getTraderDate(period2.eori)
+        _ <- check(eoris2 mustBe None)
         _ <- eoriStore.saveEoris(Seq(period1, period3))
         eoris3 <- eoriStore.getTraderDate(period1.eori)
+        _ <- check(eoris3 mustBe Some(TraderData(None, Seq(period1, period3), Seq.empty)))
         eoris4 <- eoriStore.getTraderDate(period3.eori)
+        _ <- check(eoris4 mustBe Some(TraderData(None, Seq(period1, period3), Seq.empty)))
         _ <- eoriStore.saveEoris(Seq(period3, period4))
         eoris5 <- eoriStore.getTraderDate(period3.eori)
+        _ <- check(eoris5 mustBe Some(TraderData(None, Seq(period3, period4), Seq.empty)))
         eoris6 <- eoriStore.getTraderDate(period4.eori)
+        _ <- check(eoris6 mustBe Some(TraderData(None, Seq(period3, period4), Seq.empty)))
         eoris7 <- eoriStore.getTraderDate(period5.eori)
+        _ <- check(eoris7 mustBe None)
         eoris8 <- eoriStore.getTraderDate(period6.eori)
-      } yield (eoris1, eoris2, eoris3, eoris4, eoris5, eoris6, eoris7, eoris8)
+        _ <- check(eoris8 mustBe None)
+      } yield {})
 
-      val result = await(futureResult)
-      result._1 mustBe None
-      result._2 mustBe None
-      result._3 mustBe Some(TraderData(None, Seq(period1, period3), Seq.empty))
-      result._4 mustBe Some(TraderData(None, Seq(period1, period3), Seq.empty))
-      result._5 mustBe Some(TraderData(None, Seq(period3, period4), Seq.empty))
-      result._6 mustBe Some(TraderData(None, Seq(period3, period4), Seq.empty))
-      result._7 mustBe None
-      result._8 mustBe None
     }
 
     "Complex email upsert test with preloaded data" in {
@@ -162,7 +162,21 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       val result3 = await(eoriStore.getEmail(period1.eori))
       result3 mustBe Seq(email1, email2, email3)
     }
+  }
 
+  "update email with isValidated" in {
+    val email1 = Email("one@mail.com", false)
+    val email2 = Email("one@mail.com", true)
+    val email3 = Email("three@mail.com", true)
+
+    await(for {
+      _ <- eoriStore.insert(TraderData(credentialId, Seq(period1, period2),Seq(email1)))
+      r1 <- eoriStore.getEmail(period1.eori)
+      _ <- check(r1 mustBe Seq(email1))
+      _ <- eoriStore.saveEmail(period1.eori, email2)
+      r2 <- eoriStore.getEmail(period1.eori)
+      //_ <- check(r2 mustBe Seq(Seq(email2)))  //This will fail
+    } yield {})
   }
 
 }

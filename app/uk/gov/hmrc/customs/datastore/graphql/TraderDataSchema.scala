@@ -50,6 +50,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) {
     * List of mutations to work with the entity of TraderData.
     */
   val Mutations: List[Field[Unit, Unit]] = List(
+    //Example: {"query" : "mutation {addTrader(credentialId:\"1111111\" eori:\"GB12345678\" email:\"abc@goodmail.com\" isValidated:true )}" }
     Field(
       name = "addTrader",
       fieldType = BooleanType,
