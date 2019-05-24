@@ -19,6 +19,7 @@ package uk.gov.hmrc.customs.datastore.controllers
 import javax.inject.Inject
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent}
+import play.mvc.Http
 import uk.gov.hmrc.customs.datastore.domain.TraderData._
 import uk.gov.hmrc.customs.datastore.services.EoriStore
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
@@ -28,6 +29,6 @@ import scala.concurrent.ExecutionContext
 class SubscriptionEmailController @Inject()(eoriStore: EoriStore)(implicit ec: ExecutionContext) extends BaseController {
 
   def getVerifiedEmail(eori: String): Action[AnyContent] = Action.async { implicit request =>
-    eoriStore.getEmail(eori).map(emails => Ok(Json.toJson(emails)))
+    eoriStore.getEmail(eori).map(emails => Ok(Json.toJson(emails)).as(Http.MimeTypes.JSON))
   }
 }
