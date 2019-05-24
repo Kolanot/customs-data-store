@@ -31,7 +31,7 @@ class HistoricEoriController @Inject()(eoriStore: EoriStore, etmp: ETMPHistorySe
 
   def getEoriHistory(eori: String): Action[AnyContent] = Action.async { implicit request =>
 
-    eoriStore.getTraderDate(eori).flatMap {
+    eoriStore.getTraderData(eori).flatMap {
       case None =>
         etmp.getHistory(eori)
           .map { eoriPeriods =>

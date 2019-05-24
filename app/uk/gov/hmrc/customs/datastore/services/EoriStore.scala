@@ -36,7 +36,9 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     val FieldEori = classOf[EoriPeriod].getDeclaredFields.apply(0).getName
     val FieldEoriHistory = classOf[TraderData].getDeclaredFields.apply(1).getName
     val FieldEmails = classOf[TraderData].getDeclaredFields.apply(2).getName
-    val SearchKey = s"$FieldEoriHistory.$FieldEori"
+    val FieldEmailAddress = classOf[Email].getDeclaredFields.apply(0).getName
+    val EoriSearchKey = s"$FieldEoriHistory.$FieldEori"
+    val EmailSearchKey = s"$FieldEmails.$FieldEmailAddress"
   }
     with ReactiveRepository[TraderData, BSONObjectID](
     collectionName = "dataStore",
@@ -46,36 +48,46 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
   ) {
 
   override def indexes: Seq[Index] = Seq(
-    Index(Seq(SearchKey -> IndexType.Ascending), name = Some(FieldEoriHistory + FieldEori + "Index"), unique = true, sparse = true))
+    Index(Seq(EoriSearchKey -> IndexType.Ascending), name = Some(FieldEoriHistory + FieldEori + "Index"), unique = true, sparse = true),
+    Index(Seq(EmailSearchKey -> IndexType.Ascending), name = Some(FieldEmails + FieldEmailAddress + "Index"), unique = true, sparse = true))
 
-  def saveEoris(eoriHistory:Seq[EoriPeriod]):Future[Any] = {
+  def saveEoris(eoriHistory: Seq[EoriPeriod]): Future[Any] = {
     findAndUpdate(
-      query = Json.obj(SearchKey -> Json.obj("$in" -> eoriHistory.map(_.eori))),
+      query = Json.obj(EoriSearchKey -> Json.obj("$in" -> eoriHistory.map(_.eori))),
       update = Json.obj("$setOnInsert" -> Json.obj(FieldEmails -> Json.arr()), "$set" -> Json.obj(FieldEoriHistory -> Json.toJson(eoriHistory))),
       upsert = true
     )
   }
 
-  def getTraderDate(eori: Eori): Future[Option[TraderData]] = {
-    find(SearchKey -> eori).map(_.headOption)
+  def getTraderData(eori: String): Future[Option[TraderData]] = {
+    find(EoriSearchKey -> eori).map(_.headOption)
   }
 
   def getEmail(eori: Eori): Future[Seq[Email]] = {
-    getTraderDate(eori).map(traderData => traderData.map(_.emails).getOrElse(Nil))
+    getTraderData(eori).map(traderData => traderData.map(_.emails).getOrElse(Nil))
   }
 
   def saveEmail(eori: Eori, email: Email): Future[Any] = {
-    findAndUpdate(
-      query = Json.obj(SearchKey -> eori),
-      update = Json.obj(
-        "$setOnInsert" -> Json.obj(FieldEoriHistory -> Json.arr(Json.obj(FieldEori -> eori))),
-        "$addToSet" -> Json.obj(FieldEmails -> email)),
-      upsert = true
-    )
+
+    for {
+      _ <- findAndUpdate(
+        query = Json.obj(EoriSearchKey -> eori),
+        update = Json.obj(
+          "$pull" -> Json.obj("emails" -> Json.obj("address" -> email.address))
+        )
+      )
+      _ <- findAndUpdate(
+        query = Json.obj(EoriSearchKey -> eori),
+        update = Json.obj(
+          "$setOnInsert" -> Json.obj(FieldEoriHistory -> Json.arr(Json.obj(FieldEori -> eori))),
+          "$addToSet" -> Json.obj(FieldEmails -> email)),
+        upsert = true
+      )
+    } yield {}
   }
 
   //When someone registered for a new Eori, they will call this endpoint to save the data
-  def rosmInsert(credId:CredentialId, eori:Eori, email: String, isValidated:Boolean):Future[Boolean] = {
+  def rosmInsert(credId: CredentialId, eori: Eori, email: String, isValidated: Boolean): Future[Boolean] = {
     //TODO
     Future.successful(true)
   }

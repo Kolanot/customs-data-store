@@ -34,7 +34,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) {
     Field(
       name = "trader",
       fieldType = ListType(TraderDataType),
-      resolve = _ => eoriStore.getTraderDate("1234").map(_.toList)
+      resolve = _ => eoriStore.getTraderData("1234").map(_.toList)
     ),
     Field(
       name = "findEmail",
@@ -42,7 +42,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) {
       arguments = List(
         Argument("eori", StringType)
       ),
-      resolve = sangriaContext => eoriStore.getTraderDate(sangriaContext.args.arg[String]("eori"))
+      resolve = sangriaContext => eoriStore.getTraderData(sangriaContext.args.arg[String]("eori"))
     )
   )
 

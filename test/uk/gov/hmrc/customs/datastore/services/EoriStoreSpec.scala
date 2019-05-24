@@ -29,7 +29,7 @@ import scala.concurrent.Future
 class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with BeforeAndAfterEach {
 
   override def beforeEach: Unit = {
-    await(eoriStore.drop)
+    await(eoriStore.removeAll())
   }
 
   val reactiveMongo = new ReactiveMongoComponent {
@@ -66,8 +66,8 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
         eoriStore.insert(trader1)
         eoriStore.insert(trader2)
       }
-      def getTraderWithEori1() = await ( eoriStore.getTraderDate(period1.eori) )
-      def getTraderWithEori2() = await ( eoriStore.getTraderDate(period2.eori) )
+      def getTraderWithEori1() = await ( eoriStore.getTraderData(period1.eori) )
+      def getTraderWithEori2() = await ( eoriStore.getTraderData(period2.eori) )
 
       setupDBWith2Trader()
       getTraderWithEori1() mustBe Some(trader1)
@@ -77,23 +77,23 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
 
     "Complex email upsert test with empty database" in {
       await(for {
-        eoris1 <- eoriStore.getTraderDate(period1.eori)
+        eoris1 <- eoriStore.getTraderData(period1.eori)
         _ <- check(eoris1 mustBe None)
-        eoris2 <- eoriStore.getTraderDate(period2.eori)
+        eoris2 <- eoriStore.getTraderData(period2.eori)
         _ <- check(eoris2 mustBe None)
         _ <- eoriStore.saveEoris(Seq(period1, period3))
-        eoris3 <- eoriStore.getTraderDate(period1.eori)
+        eoris3 <- eoriStore.getTraderData(period1.eori)
         _ <- check(eoris3 mustBe Some(TraderData(None, Seq(period1, period3), Seq.empty)))
-        eoris4 <- eoriStore.getTraderDate(period3.eori)
+        eoris4 <- eoriStore.getTraderData(period3.eori)
         _ <- check(eoris4 mustBe Some(TraderData(None, Seq(period1, period3), Seq.empty)))
         _ <- eoriStore.saveEoris(Seq(period3, period4))
-        eoris5 <- eoriStore.getTraderDate(period3.eori)
+        eoris5 <- eoriStore.getTraderData(period3.eori)
         _ <- check(eoris5 mustBe Some(TraderData(None, Seq(period3, period4), Seq.empty)))
-        eoris6 <- eoriStore.getTraderDate(period4.eori)
+        eoris6 <- eoriStore.getTraderData(period4.eori)
         _ <- check(eoris6 mustBe Some(TraderData(None, Seq(period3, period4), Seq.empty)))
-        eoris7 <- eoriStore.getTraderDate(period5.eori)
+        eoris7 <- eoriStore.getTraderData(period5.eori)
         _ <- check(eoris7 mustBe None)
-        eoris8 <- eoriStore.getTraderDate(period6.eori)
+        eoris8 <- eoriStore.getTraderData(period6.eori)
         _ <- check(eoris8 mustBe None)
       } yield {})
 
@@ -104,16 +104,16 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       val furueResult = for {
         _ <- eoriStore.insert(TraderData(credentialId,Seq(period1, period2),emails))
         _ <- eoriStore.insert(TraderData(credentialId,Seq(period5, period6),Nil)) //To see if the select works correctly
-        eoris1 <- eoriStore.getTraderDate(period1.eori)
-        eoris2 <- eoriStore.getTraderDate(period2.eori)
+        eoris1 <- eoriStore.getTraderData(period1.eori)
+        eoris2 <- eoriStore.getTraderData(period2.eori)
         _ <- eoriStore.saveEoris(Seq(period1, period3))
-        eoris3 <- eoriStore.getTraderDate(period1.eori)
-        eoris4 <- eoriStore.getTraderDate(period3.eori)
+        eoris3 <- eoriStore.getTraderData(period1.eori)
+        eoris4 <- eoriStore.getTraderData(period3.eori)
         _ <- eoriStore.saveEoris(Seq(period3, period4))
-        eoris5 <- eoriStore.getTraderDate(period3.eori)
-        eoris6 <- eoriStore.getTraderDate(period4.eori)
-        eoris7 <- eoriStore.getTraderDate(period5.eori)
-        eoris8 <- eoriStore.getTraderDate(period6.eori)
+        eoris5 <- eoriStore.getTraderData(period3.eori)
+        eoris6 <- eoriStore.getTraderData(period4.eori)
+        eoris7 <- eoriStore.getTraderData(period5.eori)
+        eoris8 <- eoriStore.getTraderData(period6.eori)
       } yield (eoris1, eoris2, eoris3, eoris4, eoris5, eoris6, eoris7, eoris8)
 
       val result = await(furueResult)
@@ -136,31 +136,32 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     }
 
     "update email" in {
-      val email1 = Email("email1", true)
+      val email1 = Email("email1", false)
+      val email1valid = Email("email1", true)
       val email2 = Email("email2", true)
       val email3 = Email("email3", true)
-      await(eoriStore.insert(TraderData(credentialId, Seq(period1, period2),Seq(email1))))
+      def setupDB = await(eoriStore.insert(TraderData(credentialId, Seq(period1, period2),Seq(email1))))
+      def saveEmailAlreadyInDB = await(eoriStore.saveEmail(eori1, email1))
+      def saveEmail2ToEori2 = await(eoriStore.saveEmail(eori2, email2))
+      def saveEmail3ToEori2 = await(eoriStore.saveEmail(eori2, email3))
+      def updateEmailsValidation = await(eoriStore.saveEmail(eori1, email1valid))
+      def getEmailsWithEori1 = await(eoriStore.getEmail(period1.eori))
+      def getEmailsWithEori2 = await(eoriStore.getEmail(period2.eori))
 
-      // save email already in DB
-      await(eoriStore.saveEmail(eori1, email1))
+      setupDB
+      saveEmailAlreadyInDB
+      updateEmailsValidation
 
-      // save email2 to eori2
-      await(eoriStore.saveEmail(eori2, email2))
+      val result1 = getEmailsWithEori1
+      result1 mustBe Seq(email1valid)
 
-      // get emails with eori1
-      val result1 = await(eoriStore.getEmail(period1.eori))
-      result1 mustBe Seq(email1, email2)
+      saveEmail2ToEori2
+      val result2 = getEmailsWithEori1
+      result2 mustBe Seq(email1valid, email2)
 
-      // get emails with eori2
-      val result2 = await(eoriStore.getEmail(period2.eori))
-      result2 mustBe Seq(email1, email2)
-
-      // save email3 to eori2
-      await(eoriStore.saveEmail(eori2, email3))
-
-      // get emails with eori1
-      val result3 = await(eoriStore.getEmail(period1.eori))
-      result3 mustBe Seq(email1, email2, email3)
+      saveEmail3ToEori2
+      val result3 = getEmailsWithEori1
+      result3 mustBe Seq(email1valid, email2, email3)
     }
   }
 
@@ -175,7 +176,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       _ <- check(r1 mustBe Seq(email1))
       _ <- eoriStore.saveEmail(period1.eori, email2)
       r2 <- eoriStore.getEmail(period1.eori)
-      //_ <- check(r2 mustBe Seq(Seq(email2)))  //This will fail
+      _ <- check(r2 mustBe Seq(email2))
     } yield {})
   }
 
