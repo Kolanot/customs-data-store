@@ -27,7 +27,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class EmailStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with BeforeAndAfterEach {
 
   override def beforeEach: Unit = {
-    emailStore.drop
+    await(emailStore.removeAll())
   }
 
   val reactiveMongo: ReactiveMongoComponent = new ReactiveMongoComponent {

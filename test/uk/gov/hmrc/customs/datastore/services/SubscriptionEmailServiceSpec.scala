@@ -29,8 +29,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class SubscriptionEmailServiceSpec extends WordSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with BeforeAndAfterEach {
 
   override def beforeEach: Unit = {
-    emailStore.drop
-    eoriStore.drop
+    await(emailStore.removeAll())
+    await(eoriStore.removeAll())
   }
 
   val emailMongo: util.ReactiveMongoComponent = new util.ReactiveMongoComponent {
@@ -67,7 +67,6 @@ class SubscriptionEmailServiceSpec extends WordSpec with MustMatchers with Mongo
     }
 
     "retrieve email addresses and store in the data store" in {
-      pending
       val (result1, result2, result3) = await(for {
         _ <- emailStore.save("1", "test1@test.com")
         _ <- subscriptionEmailService.run()
@@ -80,13 +79,12 @@ class SubscriptionEmailServiceSpec extends WordSpec with MustMatchers with Mongo
         email3 <- eoriStore.getEmail("3")
       } yield (email1, email2, email3))
 
-      result1 mustBe List(Email("test11@test.com", false))
+      result1 mustBe List(Email("test1@test.com",false), Email("test11@test.com", false))
       result2 mustBe List(Email("test2@test.com", false))
       result3 mustBe List(Email("test3@test.com", false))
     }
 
     "retrieve email address and overwrite the data in the data store" in {
-      pending
       val result = for {
         _ <- emailStore.save("1", "test1@test.com")
         _ <- eoriStore.saveEmail("1", Email("test1@test.com", true))
