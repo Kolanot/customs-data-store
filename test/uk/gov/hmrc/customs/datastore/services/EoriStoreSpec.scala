@@ -29,8 +29,7 @@ import scala.concurrent.Future
 class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with BeforeAndAfterEach {
 
   override def beforeEach: Unit = {
-    //await(eoriStore.removeAll())
-    await(eoriStore.drop)
+    await(eoriStore.removeAll())
   }
 
   val reactiveMongo = new ReactiveMongoComponent {
@@ -54,7 +53,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
   val period5 = EoriPeriod(eori5, Some("2005-01-20T00:00:00Z"), None)
   val period6 = EoriPeriod(eori6, Some("2006-01-20T00:00:00Z"), None)
 
-  def check(condition:Assertion) = Future.successful(condition)
+  def toFuture(condition:Assertion) = Future.successful(condition)
 
   "EoriStore" should {
 
@@ -68,36 +67,42 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
         _ <- eoriStore.insert(trader2)
         t1 <- eoriStore.getTraderData(period1.eori)
         t2 <- eoriStore.getTraderData(period2.eori)
-        _ <- check(t1 mustBe Some(trader1))
-        _ <- check(t2 mustBe Some(trader1))
+        _ <- toFuture(t1 mustBe Some(trader1))
+        _ <- toFuture(t2 mustBe Some(trader1))
       } yield ())
 
     }
 
+    //TODO: replace with simple scenario(s)/test(s) or rename test to reflect purpose
     "Complex email upsert test with empty database" in {
       await(for {
         eoris1 <- eoriStore.getTraderData(period1.eori)
-        _ <- check(eoris1 mustBe None)
+        _ <- toFuture(eoris1 mustBe None)
         eoris2 <- eoriStore.getTraderData(period2.eori)
-        _ <- check(eoris2 mustBe None)
+        _ <- toFuture(eoris2 mustBe None)
         _ <- eoriStore.saveEoris(Seq(period1, period3))
         eoris3 <- eoriStore.getTraderData(period1.eori)
-        _ <- check(eoris3 mustBe Some(TraderData(None, Seq(period1, period3), None)))
+        _ <- toFuture(eoris3 mustBe Some(TraderData(None, Seq(period1, period3), None)))
+        _ <- toFuture(eoris3 mustBe Some(TraderData(None, Seq(period1, period3), None)))
         eoris4 <- eoriStore.getTraderData(period3.eori)
-        _ <- check(eoris4 mustBe Some(TraderData(None, Seq(period1, period3), None)))
+        _ <- toFuture(eoris4 mustBe Some(TraderData(None, Seq(period1, period3), None)))
+        _ <- toFuture(eoris4 mustBe Some(TraderData(None, Seq(period1, period3), None)))
         _ <- eoriStore.saveEoris(Seq(period3, period4))
         eoris5 <- eoriStore.getTraderData(period3.eori)
-        _ <- check(eoris5 mustBe Some(TraderData(None, Seq(period3, period4), None)))
+        _ <- toFuture(eoris5 mustBe Some(TraderData(None, Seq(period3, period4), None)))
+        _ <- toFuture(eoris5 mustBe Some(TraderData(None, Seq(period3, period4), None)))
         eoris6 <- eoriStore.getTraderData(period4.eori)
-        _ <- check(eoris6 mustBe Some(TraderData(None, Seq(period3, period4), None)))
+        _ <- toFuture(eoris6 mustBe Some(TraderData(None, Seq(period3, period4), None)))
+        _ <- toFuture(eoris6 mustBe Some(TraderData(None, Seq(period3, period4), None)))
         eoris7 <- eoriStore.getTraderData(period5.eori)
-        _ <- check(eoris7 mustBe None)
+        _ <- toFuture(eoris7 mustBe None)
         eoris8 <- eoriStore.getTraderData(period6.eori)
-        _ <- check(eoris8 mustBe None)
+        _ <- toFuture(eoris8 mustBe None)
       } yield {})
 
     }
 
+    //TODO: replace with simple scenario(s)/test(s) or rename test to reflect purpose
     "Complex email upsert test with preloaded data" in {
       val emails = Option(Email("a.b@mail.com", true))
       val furueResult = for {
@@ -172,10 +177,10 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     await(for {
       _ <- eoriStore.insert(TraderData(credentialId, Seq(period1, period2),Option(email1)))
       r1 <- eoriStore.getEmail(period1.eori)
-      _ <- check(r1 mustBe Some(email1))
+      _ <- toFuture(r1 mustBe Some(email1))
       _ <- eoriStore.saveEmail(period1.eori, email2)
       r2 <- eoriStore.getEmail(period1.eori)
-      _ <- check(r2 mustBe Some(email2))
+      _ <- toFuture(r2 mustBe Some(email2))
     } yield {})
   }
 

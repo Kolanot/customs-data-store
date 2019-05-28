@@ -35,7 +35,6 @@ class HistoricEoriController @Inject()(eoriStore: EoriStore, etmp: ETMPHistorySe
       case None =>
         etmp.getHistory(eori)
           .map { eoriPeriods =>
-            //eoriStore.saveEoris(eoriPeriods)
             eoriStore.insert(TraderData(None, eoriPeriods, None))
             eoriPeriods
           }
