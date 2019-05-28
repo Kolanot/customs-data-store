@@ -46,6 +46,8 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     domainFormat = TraderData.traderDataFormat,
     idFormat = ReactiveMongoFormats.objectIdFormats
   ) {
+  println("FieldEmails: " + FieldEmails)
+  println("EmailSearchKeyL " + EmailSearchKey)
 
   override def indexes: Seq[Index] = Seq(
     Index(Seq(EoriSearchKey -> IndexType.Ascending), name = Some(FieldEoriHistory + FieldEori + "Index"), unique = true, sparse = true),
@@ -54,7 +56,7 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
   def saveEoris(eoriHistory: Seq[EoriPeriod]): Future[Any] = {
     findAndUpdate(
       query = Json.obj(EoriSearchKey -> Json.obj("$in" -> eoriHistory.map(_.eori))),
-      update = Json.obj("$setOnInsert" -> Json.obj(FieldEmails -> Json.arr()), "$set" -> Json.obj(FieldEoriHistory -> Json.toJson(eoriHistory))),
+      update = Json.obj("$set" -> Json.obj(FieldEoriHistory -> Json.toJson(eoriHistory))),
       upsert = true
     )
   }
@@ -63,27 +65,33 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     find(EoriSearchKey -> eori).map(_.headOption)
   }
 
-  def getEmail(eori: Eori): Future[Seq[Email]] = {
-    getTraderData(eori).map(traderData => traderData.map(_.emails).getOrElse(Nil))
+  def getEmail(eori: Eori): Future[Option[Email]] = {
+    getTraderData(eori).map(traderData => traderData.flatMap(_.notificationEmail))
   }
 
   def saveEmail(eori: Eori, email: Email): Future[Any] = {
-
-    for {
-      _ <- findAndUpdate(
-        query = Json.obj(EoriSearchKey -> eori),
-        update = Json.obj(
-          "$pull" -> Json.obj("emails" -> Json.obj("address" -> email.address))
-        )
-      )
-      _ <- findAndUpdate(
-        query = Json.obj(EoriSearchKey -> eori),
-        update = Json.obj(
-          "$setOnInsert" -> Json.obj(FieldEoriHistory -> Json.arr(Json.obj(FieldEori -> eori))),
-          "$addToSet" -> Json.obj(FieldEmails -> email)),
-        upsert = true
-      )
-    } yield {}
+    findAndUpdate(
+            query = Json.obj(EoriSearchKey -> eori),
+            update = Json.obj(
+              "$setOnInsert" -> Json.obj(FieldEoriHistory -> Json.arr(Json.obj(FieldEori -> eori))),
+              "$set" -> Json.obj(FieldEmails -> email)),
+            upsert = true
+          )
+//    for {
+//      _ <- findAndUpdate(
+//        query = Json.obj(EoriSearchKey -> eori),
+//        update = Json.obj(
+//          "$pull" -> Json.obj("emails" -> Json.obj("address" -> email.address))
+//        )
+//      )
+//      _ <- findAndUpdate(
+//        query = Json.obj(EoriSearchKey -> eori),
+//        update = Json.obj(
+//          "$setOnInsert" -> Json.obj(FieldEoriHistory -> Json.arr(Json.obj(FieldEori -> eori))),
+//          "$addToSet" -> Json.obj(FieldEmails -> email)),
+//        upsert = true
+//      )
+//    } yield {}
   }
 
   //When someone registered for a new Eori, they will call this endpoint to save the data

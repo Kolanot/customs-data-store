@@ -49,9 +49,9 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val traderData = TraderData(
         Some("1234"),
         Seq(EoriPeriod(eoriNumber, Some("2001-01-20T00:00:00Z"), None)),
-        Seq(Email(emailAddress, true)))
+        Option(Email(emailAddress, true)))
       when(mockEoriStore.getTraderData(any())).thenReturn(Future.successful(Option(traderData)) )
-      val query = s"""{ "query": "query { findEmail( eori: \\"$eoriNumber\\") { emails { address }  } }"}"""
+      val query = s"""{ "query": "query { findEmail( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
       val request = FakeRequest(POST, "/graphql").withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
       val result = contentAsString(controller.graphqlBody.apply(request))
       result must include("data")

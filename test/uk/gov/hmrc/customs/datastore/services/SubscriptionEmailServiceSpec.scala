@@ -25,6 +25,7 @@ import uk.gov.hmrc.customs.datastore.domain.{Email, SubscriptionEmail}
 import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class SubscriptionEmailServiceSpec extends WordSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with BeforeAndAfterEach {
 
@@ -53,7 +54,7 @@ class SubscriptionEmailServiceSpec extends WordSpec with MustMatchers with Mongo
         emails <- eoriStore.getEmail("1")
       } yield emails
 
-      await(result) mustBe Nil
+      await(result) mustBe None
     }
 
     "not remove email addresses while retrieving from manage subscription" in {
@@ -67,21 +68,18 @@ class SubscriptionEmailServiceSpec extends WordSpec with MustMatchers with Mongo
     }
 
     "retrieve email addresses and store in the data store" in {
-      val (result1, result2, result3) = await(for {
+      await(for {
         _ <- emailStore.save("1", "test1@test.com")
         _ <- subscriptionEmailService.run()
         _ <- emailStore.save("2", "test2@test.com")
-        _ <- emailStore.save("3", "test3@test.com")
+        _ <- emailStore.save("2", "test3@test.com")
         _ <- emailStore.save("1", "test11@test.com")
         _ <- subscriptionEmailService.run()
         email1 <- eoriStore.getEmail("1")
+        _ <- Future.successful(email1 mustBe Some(Email("test11@test.com",false)))
         email2 <- eoriStore.getEmail("2")
-        email3 <- eoriStore.getEmail("3")
-      } yield (email1, email2, email3))
-
-      result1 mustBe List(Email("test1@test.com",false), Email("test11@test.com", false))
-      result2 mustBe List(Email("test2@test.com", false))
-      result3 mustBe List(Email("test3@test.com", false))
+        _ <- Future.successful(email2 mustBe Some(Email("test3@test.com", false)))
+      } yield ())
     }
 
     "retrieve email address and overwrite the data in the data store" in {
@@ -92,7 +90,7 @@ class SubscriptionEmailServiceSpec extends WordSpec with MustMatchers with Mongo
         email <- eoriStore.getEmail("1")
       } yield email
 
-      await(result) mustBe List(Email("test1@test.com", false))
+      await(result) mustBe Some(Email("test1@test.com", false))
     }
   }
 }

@@ -28,7 +28,7 @@ case class Email(address: EmailAddress,
 
 case class TraderData(credentialId: Option[CredentialId],
                       eoriHistory: Seq[EoriPeriod],
-                      emails:Seq[Email])
+                      notificationEmail:Option[Email])
 
 object TraderData {
   implicit val eoriPeriodFormat = Json.format[EoriPeriod]
