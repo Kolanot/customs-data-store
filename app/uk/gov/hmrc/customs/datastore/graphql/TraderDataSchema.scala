@@ -57,14 +57,14 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) {
       arguments = List(
         Argument("credentialId", StringType),
         Argument("eori", StringType),
-        Argument("email", StringType),
+        Argument("notificationEmail", StringType),
         Argument("isValidated", BooleanType)
       ),
       resolve = sangriaContext =>
         eoriStore.rosmInsert(
           sangriaContext.args.arg[String]("credentialId"),
           sangriaContext.args.arg[String]("eori"),
-          sangriaContext.args.arg[String]("email"),
+          sangriaContext.args.arg[String]("notificationEmail"),
           sangriaContext.args.arg[Boolean]("isValidated")
         )
     )

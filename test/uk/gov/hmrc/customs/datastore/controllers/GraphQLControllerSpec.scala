@@ -66,7 +66,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val eoriNumber:Eori = "GB12345678"
       val emailAddress = "abc@goodmail.com"
       when(mockEoriStore.rosmInsert(any(),any(),any(),any())).thenReturn(Future.successful(true))
-      val query = s"""{"query" : "mutation {addTrader(credentialId:\\"$credentialId\\" eori:\\"$eoriNumber\\" email:\\"$emailAddress\\" isValidated:true )}" }"""
+      val query = s"""{"query" : "mutation {addTrader(credentialId:\\"$credentialId\\" eori:\\"$eoriNumber\\" notificationEmail:\\"$emailAddress\\" isValidated:true )}" }"""
       val request = FakeRequest(POST, "/graphql").withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
       val result = contentAsString(controller.graphqlBody.apply(request))
 
