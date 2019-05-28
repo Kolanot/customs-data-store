@@ -30,7 +30,7 @@ class SubscriptionEmailService @Inject()(eoriStore: EoriStore, emailStore: Email
   def run()(implicit ec: ExecutionContext) = {
     for {
       emails <- emailStore.retrieveAll()
-      _ <- Future.traverse(emails)(saveEmails)
+      _ <- Future.traverse(emails)(saveEmails)   //TODO if this fails we have no knowledge about it. Needs to be fixed and tested for failure
     } yield {}
   }
 }

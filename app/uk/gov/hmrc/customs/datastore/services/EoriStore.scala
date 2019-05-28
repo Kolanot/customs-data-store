@@ -71,27 +71,12 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
 
   def saveEmail(eori: Eori, email: Email): Future[Any] = {
     findAndUpdate(
-            query = Json.obj(EoriSearchKey -> eori),
-            update = Json.obj(
-              "$setOnInsert" -> Json.obj(FieldEoriHistory -> Json.arr(Json.obj(FieldEori -> eori))),
-              "$set" -> Json.obj(FieldEmails -> email)),
-            upsert = true
-          )
-//    for {
-//      _ <- findAndUpdate(
-//        query = Json.obj(EoriSearchKey -> eori),
-//        update = Json.obj(
-//          "$pull" -> Json.obj("emails" -> Json.obj("address" -> email.address))
-//        )
-//      )
-//      _ <- findAndUpdate(
-//        query = Json.obj(EoriSearchKey -> eori),
-//        update = Json.obj(
-//          "$setOnInsert" -> Json.obj(FieldEoriHistory -> Json.arr(Json.obj(FieldEori -> eori))),
-//          "$addToSet" -> Json.obj(FieldEmails -> email)),
-//        upsert = true
-//      )
-//    } yield {}
+      query = Json.obj(EoriSearchKey -> eori),
+      update = Json.obj(
+        "$setOnInsert" -> Json.obj(FieldEoriHistory -> Json.arr(Json.obj(FieldEori -> eori))),
+        "$set" -> Json.obj(FieldEmails -> email)),
+      upsert = true
+    )
   }
 
   //When someone registered for a new Eori, they will call this endpoint to save the data
