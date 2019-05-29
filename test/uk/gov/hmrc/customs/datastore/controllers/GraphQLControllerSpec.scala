@@ -62,7 +62,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
     }
 
     "Insert new trader into our database" in new GraphQLScenario() {
-      val credentialId:CredentialId = "1111111"
+      val credentialId:InternalId = "1111111"
       val eoriNumber:Eori = "GB12345678"
       val emailAddress = "abc@goodmail.com"
       when(mockEoriStore.rosmInsert(any(),any(),any(),any())).thenReturn(Future.successful(true))

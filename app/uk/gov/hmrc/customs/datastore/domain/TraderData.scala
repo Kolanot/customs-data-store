@@ -26,7 +26,7 @@ case class Email(address: EmailAddress,
                  isValidated: Boolean)  //TODO Add some field to store default email
 
 
-case class TraderData(credentialId: Option[CredentialId],
+case class TraderData(internalId: Option[InternalId],
                       eoriHistory: Seq[EoriPeriod],
                       notificationEmail:Option[Email])
 
