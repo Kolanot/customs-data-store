@@ -16,19 +16,44 @@
 
 package uk.gov.hmrc.customs.datastore.graphql
 
-import sangria.macros.derive.{ObjectTypeName, deriveObjectType}
+import sangria.macros.derive._
 import sangria.schema._
-import uk.gov.hmrc.customs.datastore.domain.{Email, EoriPeriod, TraderData}
+import uk.gov.hmrc.customs.datastore.domain.{Email, EmailAddress, EoriPeriod, TraderData}
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.customs.datastore.services.EoriStore
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import sangria.marshalling.FromInput
 
+import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput, ResultMarshaller}
+
+trait InputUnmarshallerGenerator {
+
+  def inputUnmarshaller[T](inputToClassFunc: Map[String, Any] => T): FromInput[T] = new FromInput[T] {
+    val marshaller: ResultMarshaller = CoercedScalaResultMarshaller.default
+
+    override def fromResult(node: marshaller.Node): T = inputToClassFunc(node.asInstanceOf[Map[String, Any]])
+  }
+}
 @Singleton
-class TraderDataSchema @Inject()(eoriStore: EoriStore) {
+class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshallerGenerator{
+
+  val NotificationEmail = "notificationEmail"
+  val InternalId = "internalId"
+  val Address = "address"
+  val IsValidated = "isValidated"
 
   implicit val EoriHistoryType: ObjectType[Unit, EoriPeriod] = deriveObjectType[Unit, EoriPeriod](ObjectTypeName("EoriHistory"))
   implicit val EmailType: ObjectType[Unit, Email] = deriveObjectType[Unit, Email](ObjectTypeName("Email"))
   implicit val TraderDataType: ObjectType[Unit, TraderData] = deriveObjectType[Unit, TraderData](ObjectTypeName("TraderData"))
+
+  implicit val InputEmailType:InputObjectType[InputEmail] = deriveInputObjectType[InputEmail](InputObjectTypeName("email"))
+  implicit val InputEmailUnmarshaller: FromInput[InputEmail] = inputUnmarshaller{
+    input => InputEmail(
+      address = input.get(Address).flatMap(_.asInstanceOf[Option[EmailAddress]]),
+      isValidated = input.get(IsValidated).flatMap(_.asInstanceOf[Option[Boolean]])
+    )
+  }
+
 
   val Queries: List[Field[Unit, Unit]] = List(
     Field(
@@ -67,6 +92,20 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) {
           sangriaContext.args.arg[String]("notificationEmail"),
           sangriaContext.args.arg[Boolean]("isValidated")
         )
+    ),
+    Field(
+      name = "byInternalId",
+      fieldType = BooleanType,
+      arguments = List(
+        Argument(InternalId, StringType),
+        Argument("eori", OptionInputType(StringType)),
+        Argument(NotificationEmail, OptionInputType(InputEmailType))
+      ),
+      resolve = ctx => {
+        val internalId = ctx.args.arg[String](InternalId)
+        val email = ctx.args.raw.get(NotificationEmail).flatMap(_.asInstanceOf[Option[InputEmail]])
+        eoriStore.upsertByInternalId(internalId,email)
+      }
     )
   )
 

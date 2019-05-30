@@ -17,13 +17,14 @@
 package uk.gov.hmrc.customs.datastore.services
 
 import javax.inject._
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, Writes}
 import play.api.libs.json.Json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.datastore.domain.TraderData._
 import uk.gov.hmrc.customs.datastore.domain._
+import uk.gov.hmrc.customs.datastore.graphql.InputEmail
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -33,12 +34,14 @@ import scala.concurrent.Future
 @Singleton
 class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
   extends {
+    val InternalId = classOf[TraderData].getDeclaredFields.apply(0).getName
     val FieldEori = classOf[EoriPeriod].getDeclaredFields.apply(0).getName
     val FieldEoriHistory = classOf[TraderData].getDeclaredFields.apply(1).getName
     val FieldEmails = classOf[TraderData].getDeclaredFields.apply(2).getName
     val FieldEmailAddress = classOf[Email].getDeclaredFields.apply(0).getName
     val EoriSearchKey = s"$FieldEoriHistory.$FieldEori"
     val EmailSearchKey = s"$FieldEmails.$FieldEmailAddress"
+    val FieldIsValidated = s"$FieldEmails.${classOf[Email].getDeclaredFields.apply(1).getName}"
   }
     with ReactiveRepository[TraderData, BSONObjectID](
     collectionName = "dataStore",
@@ -46,12 +49,12 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     domainFormat = TraderData.traderDataFormat,
     idFormat = ReactiveMongoFormats.objectIdFormats
   ) {
-  println("FieldEmails: " + FieldEmails)
-  println("EmailSearchKeyL " + EmailSearchKey)
 
   override def indexes: Seq[Index] = Seq(
     Index(Seq(EoriSearchKey -> IndexType.Ascending), name = Some(FieldEoriHistory + FieldEori + "Index"), unique = true, sparse = true),
-    Index(Seq(EmailSearchKey -> IndexType.Ascending), name = Some(FieldEmails + FieldEmailAddress + "Index"), unique = true, sparse = true))
+    //Index(Seq(EmailSearchKey -> IndexType.Ascending), name = Some(FieldEmails + FieldEmailAddress + "Index"), unique = true, sparse = true),
+    Index(Seq(InternalId -> IndexType.Ascending), name = Some(InternalId+"Index"), unique = true, sparse = true)
+  )
 
   def saveEoris(eoriHistory: Seq[EoriPeriod]): Future[Any] = {
     findAndUpdate(
@@ -83,5 +86,20 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     //TODO: When someone registered for a new Eori, they will call this endpoint to save the data
     Future.successful(true)
   }
+
+  def upsertByInternalId(internalId: InternalId, email: Option[InputEmail]):Future[Boolean] = {
+
+    val updateEmailAddress = email.flatMap(_.address).map(address => ("$set" -> toJsFieldJsValueWrapper(Json.obj(EmailSearchKey -> address))))
+    val updateIsValidated = email.flatMap(_.isValidated).map(isValidated => ("$set" -> toJsFieldJsValueWrapper(Json.obj(FieldIsValidated -> isValidated))))
+    val updateables = Seq(updateEmailAddress, updateIsValidated).flatten
+
+    findAndUpdate(
+      query = Json.obj(InternalId -> internalId),
+      update = Json.obj(updateables: _*),
+      upsert = true
+    )
+    Future.successful(true)
+  }
+
 
 }

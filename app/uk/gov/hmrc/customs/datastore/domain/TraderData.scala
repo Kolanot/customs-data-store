@@ -23,7 +23,7 @@ case class EoriPeriod(eori: Eori,
                       validUntil: Option[String])
 
 case class Email(address: EmailAddress,
-                 isValidated: Boolean)  //TODO Add some field to store default email
+                 isValidated: Boolean)
 
 
 case class TraderData(internalId: Option[InternalId],
