@@ -22,16 +22,16 @@ case class EoriPeriod(eori: Eori,
                       validFrom: Option[String],
                       validUntil: Option[String])
 
-case class Email(address: EmailAddress,
-                 isValidated: Boolean)
+case class NotificationEmail(address: EmailAddress,
+                             isValidated: Boolean)
 
 
 case class TraderData(internalId: Option[InternalId],
                       eoriHistory: Seq[EoriPeriod],
-                      notificationEmail:Option[Email])
+                      notificationEmail:Option[NotificationEmail])
 
 object TraderData {
   implicit val eoriPeriodFormat = Json.format[EoriPeriod]
-  implicit val emailFormat = Json.format[Email]
+  implicit val emailFormat = Json.format[NotificationEmail]
   implicit val traderDataFormat = Json.format[TraderData]
 }

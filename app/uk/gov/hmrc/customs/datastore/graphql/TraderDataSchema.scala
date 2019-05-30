@@ -18,7 +18,7 @@ package uk.gov.hmrc.customs.datastore.graphql
 
 import sangria.macros.derive._
 import sangria.schema._
-import uk.gov.hmrc.customs.datastore.domain.{Email, EmailAddress, EoriPeriod, TraderData}
+import uk.gov.hmrc.customs.datastore.domain.{NotificationEmail, EmailAddress, EoriPeriod, TraderData}
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.customs.datastore.services.EoriStore
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -43,7 +43,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
   val IsValidated = "isValidated"
 
   implicit val EoriHistoryType: ObjectType[Unit, EoriPeriod] = deriveObjectType[Unit, EoriPeriod](ObjectTypeName("EoriHistory"))
-  implicit val EmailType: ObjectType[Unit, Email] = deriveObjectType[Unit, Email](ObjectTypeName("Email"))
+  implicit val EmailType: ObjectType[Unit, NotificationEmail] = deriveObjectType[Unit, NotificationEmail](ObjectTypeName("Email"))
   implicit val TraderDataType: ObjectType[Unit, TraderData] = deriveObjectType[Unit, TraderData](ObjectTypeName("TraderData"))
 
   implicit val InputEmailType:InputObjectType[InputEmail] = deriveInputObjectType[InputEmail](InputObjectTypeName("email"))

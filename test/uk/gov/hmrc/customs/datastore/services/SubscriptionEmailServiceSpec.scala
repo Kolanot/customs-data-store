@@ -21,7 +21,7 @@ import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.DefaultDB
 import uk.gov.hmrc.customs.datastore._
-import uk.gov.hmrc.customs.datastore.domain.{Email, SubscriptionEmail}
+import uk.gov.hmrc.customs.datastore.domain.{NotificationEmail, SubscriptionEmail}
 import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -76,21 +76,21 @@ class SubscriptionEmailServiceSpec extends WordSpec with MustMatchers with Mongo
         _ <- emailStore.save("1", "test11@test.com")
         _ <- subscriptionEmailService.run()
         email1 <- eoriStore.getEmail("1")
-        _ <- Future.successful(email1 mustBe Some(Email("test11@test.com",false)))
+        _ <- Future.successful(email1 mustBe Some(NotificationEmail("test11@test.com",false)))
         email2 <- eoriStore.getEmail("2")
-        _ <- Future.successful(email2 mustBe Some(Email("test3@test.com", false)))
+        _ <- Future.successful(email2 mustBe Some(NotificationEmail("test3@test.com", false)))
       } yield ())
     }
 
     "retrieve email address and overwrite the data in the data store" in {
       val result = for {
         _ <- emailStore.save("1", "test1@test.com")
-        _ <- eoriStore.saveEmail("1", Email("test1@test.com", true))
+        _ <- eoriStore.saveEmail("1", NotificationEmail("test1@test.com", true))
         _ <- subscriptionEmailService.run()
         email <- eoriStore.getEmail("1")
       } yield email
 
-      await(result) mustBe Some(Email("test1@test.com", false))
+      await(result) mustBe Some(NotificationEmail("test1@test.com", false))
     }
   }
 }

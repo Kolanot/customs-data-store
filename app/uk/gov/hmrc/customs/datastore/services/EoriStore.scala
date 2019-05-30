@@ -38,10 +38,10 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     val FieldEori = classOf[EoriPeriod].getDeclaredFields.apply(0).getName
     val FieldEoriHistory = classOf[TraderData].getDeclaredFields.apply(1).getName
     val FieldEmails = classOf[TraderData].getDeclaredFields.apply(2).getName
-    val FieldEmailAddress = classOf[Email].getDeclaredFields.apply(0).getName
+    val FieldEmailAddress = classOf[NotificationEmail].getDeclaredFields.apply(0).getName
     val EoriSearchKey = s"$FieldEoriHistory.$FieldEori"
     val EmailSearchKey = s"$FieldEmails.$FieldEmailAddress"
-    val FieldIsValidated = s"$FieldEmails.${classOf[Email].getDeclaredFields.apply(1).getName}"
+    val FieldIsValidated = s"$FieldEmails.${classOf[NotificationEmail].getDeclaredFields.apply(1).getName}"
   }
     with ReactiveRepository[TraderData, BSONObjectID](
     collectionName = "dataStore",
@@ -68,11 +68,11 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     find(EoriSearchKey -> eori).map(_.headOption)
   }
 
-  def getEmail(eori: Eori): Future[Option[Email]] = {
+  def getEmail(eori: Eori): Future[Option[NotificationEmail]] = {
     getTraderData(eori).map(traderData => traderData.flatMap(_.notificationEmail))
   }
 
-  def saveEmail(eori: Eori, email: Email): Future[Any] = {
+  def saveEmail(eori: Eori, email: NotificationEmail): Future[Any] = {
     findAndUpdate(
       query = Json.obj(EoriSearchKey -> eori),
       update = Json.obj(

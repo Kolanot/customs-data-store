@@ -24,7 +24,7 @@ import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.customs.datastore.domain.Email
+import uk.gov.hmrc.customs.datastore.domain.NotificationEmail
 import uk.gov.hmrc.customs.datastore.services.EoriStore
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -48,7 +48,7 @@ class SubscriptionEmailControllerSpec extends PlaySpec with MockitoSugar {
     "return emails as JSON for the given eori number" in {
       new SubscriptionEmailControllerScenario() {
         when(mockEoriStore.getEmail(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(Option(Email("test@test.com", false))))
+          .thenReturn(Future.successful(Option(NotificationEmail("test@test.com", false))))
 
         val result = controller.getVerifiedEmail("eori")(fakeRequest)
         status(result) mustBe Status.OK

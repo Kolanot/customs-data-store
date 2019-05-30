@@ -17,14 +17,14 @@
 package uk.gov.hmrc.customs.datastore.services
 
 import javax.inject.Inject
-import uk.gov.hmrc.customs.datastore.domain.{Email, SubscriptionEmail}
+import uk.gov.hmrc.customs.datastore.domain.{NotificationEmail, SubscriptionEmail}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionEmailService @Inject()(eoriStore: EoriStore, emailStore: EmailStore) {
 
   private def saveEmails: SubscriptionEmail => Future[Any] = {
-    record => eoriStore.saveEmail(record.`_id`, Email(record.value, false))
+    record => eoriStore.saveEmail(record.`_id`, NotificationEmail(record.value, false))
   }
 
   def run()(implicit ec: ExecutionContext) = {

@@ -105,7 +105,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
 
     //TODO: replace with simple scenario(s)/test(s) or rename test to reflect purpose
     "Complex email upsert test with preloaded data" in {
-      val emails = Option(Email("a.b@mail.com", true))
+      val emails = Option(NotificationEmail("a.b@mail.com", true))
       val furueResult = for {
         _ <- eoriStore.insert(TraderData(credentialId,Seq(period1, period2),emails))
         _ <- eoriStore.insert(TraderData(credentialId,Seq(period5, period6),None)) //To see if the select works correctly
@@ -133,7 +133,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     }
 
     "save and retrieve email" in {
-      val email = Email("a.b@example.com", false)
+      val email = NotificationEmail("a.b@example.com", false)
       await(eoriStore.saveEmail(eori1, email))
 
       val result = await(eoriStore.getEmail(eori1))
@@ -141,10 +141,10 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     }
 
     "update email" in {
-      val email1 = Email("email1", false)
-      val email1valid = Email("email1", true)
-      val email2 = Email("email2", false)
-      val email3 = Email("email3", true)
+      val email1 = NotificationEmail("email1", false)
+      val email1valid = NotificationEmail("email1", true)
+      val email2 = NotificationEmail("email2", false)
+      val email3 = NotificationEmail("email3", true)
       def setupDB = await(eoriStore.insert(TraderData(credentialId, Seq(period1, period2),Option(email1))))
       def saveEmailAlreadyInDB = await(eoriStore.saveEmail(eori1, email1))
       def saveEmail2ToEori2 = await(eoriStore.saveEmail(eori1, email2))
@@ -171,9 +171,9 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
   }
 
   "update email with isValidated" in {
-    val email1 = Email("one@mail.com", false)
-    val email2 = Email("one@mail.com", true)
-    val email3 = Email("three@mail.com", true)
+    val email1 = NotificationEmail("one@mail.com", false)
+    val email2 = NotificationEmail("one@mail.com", true)
+    val email3 = NotificationEmail("three@mail.com", true)
 
     await(for {
       _ <- eoriStore.insert(TraderData(credentialId, Seq(period1, period2),Option(email1)))
