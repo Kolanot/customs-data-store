@@ -34,7 +34,7 @@ import scala.concurrent.Future
 @Singleton
 class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
   extends {
-    val InternalId = classOf[TraderData].getDeclaredFields.apply(0).getName
+    val InternalId = "internalId"
     val FieldEori = classOf[EoriPeriod].getDeclaredFields.apply(0).getName
     val FieldEoriHistory = classOf[TraderData].getDeclaredFields.apply(1).getName
     val FieldEmails = classOf[TraderData].getDeclaredFields.apply(2).getName
@@ -94,10 +94,11 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
 
   def upsertByInternalId(internalId: InternalId, email: Option[InputEmail]):Future[Boolean] = {
     println("###upsertByInternalId: " + internalId + " ### " + email)
-//    val updateEmailAddress = email.flatMap(_.address).map(address => ("$set" -> toJsFieldJsValueWrapper(Json.obj(EmailSearchKey -> address))))
-//    val updateIsValidated = email.flatMap(_.isValidated).map(isValidated => ("$set" -> toJsFieldJsValueWrapper(Json.obj(FieldIsValidated -> isValidated))))
     val updateEmailAddress = email.flatMap(_.address).map(address => (EmailSearchKey -> toJsFieldJsValueWrapper(address)))
-    val updateIsValidated = email.flatMap(_.isValidated).map(isValidated => (FieldIsValidated -> toJsFieldJsValueWrapper(isValidated)))
+    val updateIsValidated = email match {
+      case None => Option((FieldIsValidated -> toJsFieldJsValueWrapper(false)))
+      case Some(x) => Option((FieldIsValidated -> toJsFieldJsValueWrapper(x.isValidated.getOrElse(false))))  //x.isValidated.getOrElse(false).map(isValidated =>
+    }
     val updateFields =  Seq(updateEmailAddress, updateIsValidated).flatten  //TODO fix the empty Seq case
     val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(updateFields: _*)))
     val updateEori = ("$setOnInsert" -> toJsFieldJsValueWrapper(Json.obj(FieldEoriHistory -> Json.arr())))

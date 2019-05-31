@@ -76,21 +76,21 @@ class SubscriptionEmailServiceSpec extends WordSpec with MustMatchers with Mongo
         _ <- emailStore.save("1", "test11@test.com")
         _ <- subscriptionEmailService.run()
         email1 <- eoriStore.getEmail("1")
-        _ <- Future.successful(email1 mustBe Some(NotificationEmail(Option("test11@test.com"),Option(false))))
+        _ <- Future.successful(email1 mustBe Some(NotificationEmail(Option("test11@test.com"),false)))
         email2 <- eoriStore.getEmail("2")
-        _ <- Future.successful(email2 mustBe Some(NotificationEmail(Option("test3@test.com"), Option(false))))
+        _ <- Future.successful(email2 mustBe Some(NotificationEmail(Option("test3@test.com"), false)))
       } yield ())
     }
 
     "retrieve email address and overwrite the data in the data store" in {
       val result = for {
         _ <- emailStore.save("1", "test1@test.com")
-        _ <- eoriStore.saveEmail("1", NotificationEmail(Option("test1@test.com"), Option(true)))
+        _ <- eoriStore.saveEmail("1", NotificationEmail(Option("test1@test.com"), true))
         _ <- subscriptionEmailService.run()
         email <- eoriStore.getEmail("1")
       } yield email
 
-      await(result) mustBe Some(NotificationEmail(Option("test1@test.com"), Option(false)))
+      await(result) mustBe Some(NotificationEmail(Option("test1@test.com"), false))
     }
   }
 }

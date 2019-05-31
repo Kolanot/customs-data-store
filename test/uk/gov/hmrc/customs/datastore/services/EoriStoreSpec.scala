@@ -23,6 +23,8 @@ import reactivemongo.api.commands.WriteResult
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.mongo.MongoConnector
 import org.scalatest.Assertion
+import uk.gov.hmrc.customs.datastore.graphql.InputEmail
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -45,6 +47,8 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
   val eori4: Eori = "EORI00000004"
   val eori5: Eori = "EORI00000005"
   val eori6: Eori = "EORI00000006"
+
+  val intId: InternalId = "1233444"
 
 
   val period1 = EoriPeriod(eori1, Some("2001-01-20T00:00:00Z"), None)
@@ -105,7 +109,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
 
     //TODO: replace with simple scenario(s)/test(s) or rename test to reflect purpose
     "Complex email upsert test with preloaded data" in {
-      val emails = Option(NotificationEmail(Option("a.b@mail.com"), Option(true)))
+      val emails = Option(NotificationEmail(Option("a.b@mail.com"), true))
       val furueResult = for {
         _ <- eoriStore.insert(TraderData(credentialId,Seq(period1, period2),emails))
         _ <- eoriStore.insert(TraderData(credentialId,Seq(period5, period6),None)) //To see if the select works correctly
@@ -133,7 +137,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     }
 
     "save and retrieve email" in {
-      val email = NotificationEmail(Option("a.b@example.com"), Option(false))
+      val email = NotificationEmail(Option("a.b@example.com"), false)
       await(eoriStore.saveEmail(eori1, email))
 
       val result = await(eoriStore.getEmail(eori1))
@@ -141,10 +145,10 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     }
 
     "update email" in {
-      val email1 = NotificationEmail(Option("email1"), Option(false))
-      val email1valid = NotificationEmail(Option("email1"), Option(true))
-      val email2 = NotificationEmail(Option("email2"), Option(false))
-      val email3 = NotificationEmail(Option("email3"), Option(true))
+      val email1 = NotificationEmail(Option("email1"), false)
+      val email1valid = NotificationEmail(Option("email1"), true)
+      val email2 = NotificationEmail(Option("email2"), false)
+      val email3 = NotificationEmail(Option("email3"), true)
       def setupDB = await(eoriStore.insert(TraderData(credentialId, Seq(period1, period2),Option(email1))))
       def saveEmailAlreadyInDB = await(eoriStore.saveEmail(eori1, email1))
       def saveEmail2ToEori2 = await(eoriStore.saveEmail(eori1, email2))
@@ -171,9 +175,9 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
   }
 
   "update email with isValidated" in {
-    val email1 = NotificationEmail(Option("one@mail.com"), Option(false))
-    val email2 = NotificationEmail(Option("one@mail.com"), Option(true))
-    val email3 = NotificationEmail(Option("three@mail.com"), Option(true))
+    val email1 = NotificationEmail(Option("one@mail.com"), false)
+    val email2 = NotificationEmail(Option("one@mail.com"), true)
+    val email3 = NotificationEmail(Option("three@mail.com"), true)
 
     await(for {
       _ <- eoriStore.insert(TraderData(credentialId, Seq(period1, period2),Option(email1)))
@@ -185,14 +189,48 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     } yield {})
   }
 
-//  "upsertByInternalId" should {
-//    val testInternalId:InternalId = "12345678"
-//    "work without any options given" in {
-//      await(for {
-//        _ <- eoriStore.upsertByInternalId(testInternalId, None)
-//        r1 <- eoriStore
-//      } yield ())
-//    }
-//  }
+  "upsertByInternalId" should {
+    "work without notification email given" in {
+      val traderData1 = TraderData(Option(intId), Seq.empty, Option(NotificationEmail(None, false)) )
 
+      await(for {
+        _ <- eoriStore.upsertByInternalId(intId, None)
+        r1 <- eoriStore.getByInternalId(intId)
+        _ <- toFuture(r1.get mustBe traderData1)
+      } yield ())
+    }
+
+    "work with email address options given" in {
+      val address1 = "a@email.com"
+      val email1: InputEmail = InputEmail(Option(address1), None)
+
+      await(for {
+        _ <- eoriStore.upsertByInternalId(intId, Option(email1))
+        r1 <- eoriStore.getByInternalId(intId)
+        _ <- toFuture(r1.get mustBe  TraderData(Option(intId), Seq.empty, Option(NotificationEmail(Option(address1), false)) ))
+      } yield ())
+    }
+
+    "work with isValidated options given" in {
+      val address1 = "a@email.com"
+      val email1: InputEmail = InputEmail(None, Option(true))
+
+      await(for {
+        _ <- eoriStore.upsertByInternalId(intId, Option(email1))
+        r1 <- eoriStore.getByInternalId(intId)
+        _ <- toFuture(r1.get mustBe  TraderData(Option(intId), Seq.empty, Option(NotificationEmail(None, true)) ))
+      } yield ())
+    }
+
+    "work with email options given" in {
+      val address1 = "a@email.com"
+      val email1: InputEmail = InputEmail(Option(address1), Option(true))
+
+      await(for {
+        _ <- eoriStore.upsertByInternalId(intId, Option(email1))
+        r1 <- eoriStore.getByInternalId(intId)
+        _ <- toFuture(r1.get mustBe  TraderData(Option(intId), Seq.empty, Option(NotificationEmail(Option(address1), true)) ))
+      } yield ())
+    }
+  }
 }

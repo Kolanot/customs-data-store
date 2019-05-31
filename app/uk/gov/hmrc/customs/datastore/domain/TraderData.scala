@@ -23,7 +23,7 @@ case class EoriPeriod(eori: Eori,
                       validUntil: Option[String])
 
 case class NotificationEmail(address: Option[EmailAddress],
-                             isValidated: Option[Boolean])
+                             isValidated: Boolean)
 
 
 case class TraderData(internalId: Option[InternalId],
