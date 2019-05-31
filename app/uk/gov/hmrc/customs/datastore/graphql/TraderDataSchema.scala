@@ -68,6 +68,12 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
         Argument("eori", StringType)
       ),
       resolve = sangriaContext => eoriStore.getTraderData(sangriaContext.args.arg[String]("eori"))
+    ),
+    Field(
+      name = "byInternalId",
+      fieldType = OptionType(TraderDataType),
+      arguments = List(Argument(InternalId,StringType)),
+      resolve = ctx => eoriStore.getByInternalId(ctx.args.arg[String](InternalId))
     )
   )
 

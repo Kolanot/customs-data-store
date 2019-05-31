@@ -24,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class SubscriptionEmailService @Inject()(eoriStore: EoriStore, emailStore: EmailStore) {
 
   private def saveEmails: SubscriptionEmail => Future[Any] = {
-    record => eoriStore.saveEmail(record.`_id`, NotificationEmail(record.value, false))
+    record => eoriStore.saveEmail(record.`_id`, NotificationEmail(Option(record.value), false))
   }
 
   def run()(implicit ec: ExecutionContext) = {

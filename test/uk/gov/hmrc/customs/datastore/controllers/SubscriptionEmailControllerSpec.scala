@@ -48,7 +48,7 @@ class SubscriptionEmailControllerSpec extends PlaySpec with MockitoSugar {
     "return emails as JSON for the given eori number" in {
       new SubscriptionEmailControllerScenario() {
         when(mockEoriStore.getEmail(ArgumentMatchers.any()))
-          .thenReturn(Future.successful(Option(NotificationEmail("test@test.com", false))))
+          .thenReturn(Future.successful(Option(NotificationEmail(Option("test@test.com"), false))))
 
         val result = controller.getVerifiedEmail("eori")(fakeRequest)
         status(result) mustBe Status.OK

@@ -87,15 +87,25 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     Future.successful(true)
   }
 
+  def getByInternalId(internalId:InternalId):Future[Option[TraderData]] = {
+    println("### getByInternalId: " + internalId)
+    find(InternalId -> internalId).map(_.headOption)
+  }
+
   def upsertByInternalId(internalId: InternalId, email: Option[InputEmail]):Future[Boolean] = {
-
-    val updateEmailAddress = email.flatMap(_.address).map(address => ("$set" -> toJsFieldJsValueWrapper(Json.obj(EmailSearchKey -> address))))
-    val updateIsValidated = email.flatMap(_.isValidated).map(isValidated => ("$set" -> toJsFieldJsValueWrapper(Json.obj(FieldIsValidated -> isValidated))))
-    val updateables = Seq(updateEmailAddress, updateIsValidated).flatten
-
+    println("###upsertByInternalId: " + internalId + " ### " + email)
+//    val updateEmailAddress = email.flatMap(_.address).map(address => ("$set" -> toJsFieldJsValueWrapper(Json.obj(EmailSearchKey -> address))))
+//    val updateIsValidated = email.flatMap(_.isValidated).map(isValidated => ("$set" -> toJsFieldJsValueWrapper(Json.obj(FieldIsValidated -> isValidated))))
+    val updateEmailAddress = email.flatMap(_.address).map(address => (EmailSearchKey -> toJsFieldJsValueWrapper(address)))
+    val updateIsValidated = email.flatMap(_.isValidated).map(isValidated => (FieldIsValidated -> toJsFieldJsValueWrapper(isValidated)))
+    val updateFields =  Seq(updateEmailAddress, updateIsValidated).flatten  //TODO fix the empty Seq case
+    val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(updateFields: _*)))
+    val updateEori = ("$setOnInsert" -> toJsFieldJsValueWrapper(Json.obj(FieldEoriHistory -> Json.arr())))
+    //val updateables = Seq(updateEori, updateEmailAddress, updateIsValidated).flatten
+    println("###updateSet: " + updateSet)
     findAndUpdate(
       query = Json.obj(InternalId -> internalId),
-      update = Json.obj(updateables: _*),
+      update = Json.obj(updateEori, updateSet),
       upsert = true
     )
     Future.successful(true)

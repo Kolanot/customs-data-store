@@ -22,7 +22,7 @@ case class EoriPeriod(eori: Eori,
                       validFrom: Option[String],
                       validUntil: Option[String])
 
-case class NotificationEmail(address: EmailAddress,
+case class NotificationEmail(address: Option[EmailAddress],
                              isValidated: Boolean)
 
 
