@@ -99,7 +99,7 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
       case None => Option((FieldIsValidated -> toJsFieldJsValueWrapper(false)))
       case Some(x) => Option((FieldIsValidated -> toJsFieldJsValueWrapper(x.isValidated.getOrElse(false))))  //x.isValidated.getOrElse(false).map(isValidated =>
     }
-    val updateFields =  Seq(updateEmailAddress, updateIsValidated).flatten  //TODO fix the empty Seq case
+    val updateFields =  Seq(updateEmailAddress, updateIsValidated).flatten
     val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(updateFields: _*)))
     val updateEori = ("$setOnInsert" -> toJsFieldJsValueWrapper(Json.obj(FieldEoriHistory -> Json.arr())))
     //val updateables = Seq(updateEori, updateEmailAddress, updateIsValidated).flatten

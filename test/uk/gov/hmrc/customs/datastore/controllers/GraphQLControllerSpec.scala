@@ -133,5 +133,56 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
   }
 
+  "query byInternalId" should {
+
+    "return email and validated" in new GraphQLScenario{
+      val traderData = TraderData(Option(internalId), Seq.empty, Option(NotificationEmail(Option(testEmail), true)))
+      when(mockEoriStore.getByInternalId(any())).thenReturn(Future.successful(Option(traderData)))
+      val query = s"""{"query" : "query {byInternalId(internalId:\\"$internalId\\") { internalId notificationEmail {address, isValidated}}}" }"""
+      val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
+      val result = contentAsString(controller.graphqlBody.apply(request))
+
+      result must include("data")
+      verify(mockEoriStore).getByInternalId(is(internalId))
+      println(result)
+      result mustBe s"""{"data":{"byInternalId":{"internalId":"$internalId","notificationEmail":{"address":"bob@mail.com","isValidated":true}}}}"""
+    }
+
+    "return email" in new GraphQLScenario{
+      val traderData = TraderData(Option(internalId), Seq.empty, Option(NotificationEmail(Option(testEmail), true)))
+      when(mockEoriStore.getByInternalId(any())).thenReturn(Future.successful(Option(traderData)))
+      val query = s"""{"query" : "query {byInternalId(internalId:\\"$internalId\\") { internalId notificationEmail {address}}}" }"""
+      val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
+      val result = contentAsString(controller.graphqlBody.apply(request))
+
+      result must include("data")
+      verify(mockEoriStore).getByInternalId(is(internalId))
+      result mustBe s"""{"data":{"byInternalId":{"internalId":"$internalId","notificationEmail":{"address":"bob@mail.com"}}}}"""
+    }
+
+    "return isValidated" in new GraphQLScenario{
+      val traderData = TraderData(Option(internalId), Seq.empty, Option(NotificationEmail(Option(testEmail), true)))
+      when(mockEoriStore.getByInternalId(any())).thenReturn(Future.successful(Option(traderData)))
+      val query = s"""{"query" : "query {byInternalId(internalId:\\"$internalId\\") { internalId notificationEmail {isValidated}}}" }"""
+      val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
+      val result = contentAsString(controller.graphqlBody.apply(request))
+
+      result must include("data")
+      verify(mockEoriStore).getByInternalId(is(internalId))
+      result mustBe s"""{"data":{"byInternalId":{"internalId":"$internalId","notificationEmail":{"isValidated":true}}}}"""
+    }
+
+    "return only internalId" in new GraphQLScenario{
+      val traderData = TraderData(Option(internalId), Seq.empty, Option(NotificationEmail(Option(testEmail), true)))
+      when(mockEoriStore.getByInternalId(any())).thenReturn(Future.successful(Option(traderData)))
+      val query = s"""{"query" : "query {byInternalId(internalId:\\"$internalId\\") {internalId}}" }"""
+      val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
+      val result = contentAsString(controller.graphqlBody.apply(request))
+
+      result must include("data")
+      verify(mockEoriStore).getByInternalId(is(internalId))
+      result mustBe s"""{"data":{"byInternalId":{"internalId":"$internalId"}}}"""
+    }
+  }
 
 }
