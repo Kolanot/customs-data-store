@@ -144,7 +144,6 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
       result must include("data")
       verify(mockEoriStore).getByInternalId(is(internalId))
-      println(result)
       result mustBe s"""{"data":{"byInternalId":{"internalId":"$internalId","notificationEmail":{"address":"bob@mail.com","isValidated":true}}}}"""
     }
 

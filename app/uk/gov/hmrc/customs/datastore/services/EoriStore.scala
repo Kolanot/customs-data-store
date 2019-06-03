@@ -108,8 +108,7 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
       query = Json.obj(InternalId -> internalId),
       update = Json.obj(updateEori, updateSet),
       upsert = true
-    )
-    Future.successful(true)
+    ).map(_.lastError.flatMap(_.err).isEmpty)
   }
 
 
