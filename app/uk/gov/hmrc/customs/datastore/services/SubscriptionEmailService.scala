@@ -23,14 +23,14 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionEmailService @Inject()(eoriStore: EoriStore, emailStore: EmailStore) {
 
-  private def saveEmails: SubscriptionEmail => Future[Any] = {
+  private def saveEmail: SubscriptionEmail => Future[Any] = {
     record => eoriStore.saveEmail(record.`_id`, NotificationEmail(Option(record.value), false))
   }
 
   def run()(implicit ec: ExecutionContext) = {
     for {
       emails <- emailStore.retrieveAll()
-      _ <- Future.traverse(emails)(saveEmails)   //TODO if this fails we have no knowledge about it. Needs to be fixed and tested for failure
+      _ <- Future.traverse(emails)(saveEmail)   //TODO if this fails we have no knowledge about it. Needs to be fixed and tested for failure
     } yield {}
   }
 }
