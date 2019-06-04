@@ -41,7 +41,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
   val InternalId = "internalId"
   val Address = "address"
   val IsValidated = "isValidated"
-  val EoriField = "eori"
+  val EoriField = "eoriHistory"
 
   implicit val EoriHistoryType: ObjectType[Unit, EoriPeriod] = deriveObjectType[Unit, EoriPeriod](ObjectTypeName("EoriHistory"))
   implicit val EmailType: ObjectType[Unit, NotificationEmail] = deriveObjectType[Unit, NotificationEmail](ObjectTypeName("Email"))
@@ -57,7 +57,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
   implicit val InputEoriPeriodType:InputObjectType[EoriPeriodInput] = deriveInputObjectType[EoriPeriodInput]()
   implicit val InputEoriPeriodTypeUnmarshaller = inputUnmarshaller({
     input => EoriPeriodInput(
-      eori = input(EoriField).asInstanceOf[Eori],
+      eori = input("eori").asInstanceOf[Eori],
       validFrom = input.get("validFrom").flatMap(_.asInstanceOf[Option[String]]),
       validUntil = input.get("validUntil").flatMap(_.asInstanceOf[Option[String]])
     )

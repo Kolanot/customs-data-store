@@ -25,7 +25,7 @@ import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.Helpers.{POST, contentAsString}
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
 import uk.gov.hmrc.customs.datastore.domain._
-import uk.gov.hmrc.customs.datastore.graphql.{GraphQL, InputEmail, TraderDataSchema}
+import uk.gov.hmrc.customs.datastore.graphql.{EoriPeriodInput, GraphQL, InputEmail, TraderDataSchema}
 import uk.gov.hmrc.customs.datastore.services.{EoriStore, MongoSpecSupport}
 
 import scala.concurrent.Future
@@ -36,6 +36,9 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
   val endPoint = "/graphql"
   val internalId = "12345678"
   val testEmail:EmailAddress = "bob@mail.com"
+  val testEori = "122334454"
+  val testValidFrom = "20180101"
+  val testValidUntil = "20200101"
 
   class GraphQLScenario() {
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -129,6 +132,36 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
       result must include("data")
       verify(mockEoriStore).upsertByInternalId(is(internalId),is(None),is(Some(InputEmail(Some(testEmail),Some(true)))))
+    }
+
+    "work with eoriHistory body with eori field" in new GraphQLScenario {
+      when(mockEoriStore.upsertByInternalId(any(),any(),any())).thenReturn(Future.successful(true))
+      val query = s"""{"query" : "mutation {byInternalId(internalId:\\"$internalId\\" eoriHistory:{eori:\\"$testEori\\"})}" }"""
+      val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
+      val result = contentAsString(controller.graphqlBody.apply(request))
+
+      result must include("data")
+      verify(mockEoriStore).upsertByInternalId(is(internalId),is(Some(EoriPeriodInput(testEori, None, None))),is(None))
+    }
+
+    "work with eoriHistory body with eori, validFrom fields" in new GraphQLScenario {
+      when(mockEoriStore.upsertByInternalId(any(),any(),any())).thenReturn(Future.successful(true))
+      val query = s"""{"query" : "mutation {byInternalId(internalId:\\"$internalId\\" eoriHistory:{eori:\\"$testEori\\" validFrom:\\"$testValidFrom\\"})}" }"""
+      val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
+      val result = contentAsString(controller.graphqlBody.apply(request))
+
+      result must include("data")
+      verify(mockEoriStore).upsertByInternalId(is(internalId),is(Some(EoriPeriodInput(testEori, Some(testValidFrom), None))),is(None))
+    }
+
+    "work with eoriHistory body with eori, validFrom and validUntil fields" in new GraphQLScenario {
+      when(mockEoriStore.upsertByInternalId(any(),any(),any())).thenReturn(Future.successful(true))
+      val query = s"""{"query" : "mutation {byInternalId(internalId:\\"$internalId\\" eoriHistory:{eori:\\"$testEori\\" validFrom:\\"$testValidFrom\\" validUntil:\\"$testValidUntil\\"})}" }"""
+      val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
+      val result = contentAsString(controller.graphqlBody.apply(request))
+
+      result must include("data")
+      verify(mockEoriStore).upsertByInternalId(is(internalId),is(Some(EoriPeriodInput(testEori, Some(testValidFrom), Some(testValidUntil)))),is(None))
     }
 
   }

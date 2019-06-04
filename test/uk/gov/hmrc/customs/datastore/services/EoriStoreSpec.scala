@@ -242,5 +242,39 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
         _ <- toFuture(r1.get mustBe TraderData(Option(intId), Seq(EoriPeriod(eori, None, None)), Option(NotificationEmail(None, false))))
       } yield ())
     }
+
+    "work with eori option, validFrom, validUntil given " in {
+      val eori = "1234567"
+      val validFrom = "20180101"
+      val validUntil = "20200101"
+      val eoriPeriod: EoriPeriodInput = EoriPeriodInput(eori, Option(validFrom), Option(validUntil))
+      await(for {
+        _ <- eoriStore.upsertByInternalId(intId, Option(EoriPeriodInput(eori, Option(validFrom), Option(validUntil))), None)
+        r1 <- eoriStore.getByInternalId(intId)
+        _ <- toFuture(r1.get mustBe TraderData(Option(intId), Seq(EoriPeriod(eori, Option(validFrom), Option(validUntil))), Option(NotificationEmail(None, false))))
+      } yield ())
+    }
+
+    "work with eori option and validFrom given " in {
+      val eori = "1234567"
+      val validFrom = "20180101"
+      val eoriPeriod: EoriPeriodInput = EoriPeriodInput(eori, Option(validFrom), None)
+      await(for {
+        _ <- eoriStore.upsertByInternalId(intId, Option(EoriPeriodInput(eori, Option(validFrom), None)), None)
+        r1 <- eoriStore.getByInternalId(intId)
+        _ <- toFuture(r1.get mustBe TraderData(Option(intId), Seq(EoriPeriod(eori, Option(validFrom), None)), Option(NotificationEmail(None, false))))
+      } yield ())
+    }
+
+    "work with eori option and validUntil given " in {
+      val eori = "1234567"
+      val validUntil = "20200101"
+      val eoriPeriod: EoriPeriodInput = EoriPeriodInput(eori, None, Option(validUntil))
+      await(for {
+        _ <- eoriStore.upsertByInternalId(intId, Option(EoriPeriodInput(eori, None, Option(validUntil))), None)
+        r1 <- eoriStore.getByInternalId(intId)
+        _ <- toFuture(r1.get mustBe TraderData(Option(intId), Seq(EoriPeriod(eori, None, Option(validUntil))), Option(NotificationEmail(None, false))))
+      } yield ())
+    }
   }
 }

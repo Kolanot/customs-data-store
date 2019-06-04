@@ -37,12 +37,13 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     val InternalId = "internalId"
     val FieldEori = "eori"  //classOf[EoriPeriod].getDeclaredFields.apply(0).getName
     val FieldEoriHistory = "eoriHistory"  //classOf[TraderData].getDeclaredFields.apply(1).getName
+    val FieldEoriValidFrom = "validFrom"
+    val FieldEoriValidUntil = "validUntil"
     val FieldEmails = "notificationEmail"//classOf[TraderData].getDeclaredFields.apply(2).getName
     val FieldEmailAddress = "address"//classOf[NotificationEmail].getDeclaredFields.apply(0).getName
     val EoriSearchKey = s"$FieldEoriHistory.$FieldEori"
     val EmailSearchKey = s"$FieldEmails.$FieldEmailAddress"
     val FieldIsValidated = s"$FieldEmails.${classOf[NotificationEmail].getDeclaredFields.apply(1).getName}"
-    //val FieldEoriNumber = s"$FieldEoriHistory.${classOf[EoriPeriod].getDeclaredFields.apply(0).getName}"
   }
     with ReactiveRepository[TraderData, BSONObjectID](
     collectionName = "dataStore",
@@ -102,7 +103,10 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     }
     val updateEoriNumber = eoriPeriod match {
       case Some(period) =>
-        Option(FieldEoriHistory -> toJsFieldJsValueWrapper (Json.arr (Json.obj (FieldEori -> period.eori) ) ) )
+        val updateEoriValidFrom = period.validFrom.map(vFrom => (FieldEoriValidFrom -> toJsFieldJsValueWrapper(vFrom)))
+        val updateEoriValidUntil = period.validUntil.map(vUntil => (FieldEoriValidUntil -> toJsFieldJsValueWrapper(vUntil)))
+        val updatedEoriFields = Seq(Option(FieldEori -> toJsFieldJsValueWrapper(period.eori)),updateEoriValidFrom ,updateEoriValidUntil).flatten
+        Option(FieldEoriHistory -> toJsFieldJsValueWrapper (Json.arr (Json.obj (updatedEoriFields: _*) ) ) )
       case None =>
         Option( FieldEoriHistory -> toJsFieldJsValueWrapper (Json.arr () ) )
     }
