@@ -35,13 +35,14 @@ import scala.concurrent.Future
 class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
   extends {
     val InternalId = "internalId"
-    val FieldEori = classOf[EoriPeriod].getDeclaredFields.apply(0).getName
-    val FieldEoriHistory = classOf[TraderData].getDeclaredFields.apply(1).getName
-    val FieldEmails = classOf[TraderData].getDeclaredFields.apply(2).getName
-    val FieldEmailAddress = classOf[NotificationEmail].getDeclaredFields.apply(0).getName
+    val FieldEori = "eori"  //classOf[EoriPeriod].getDeclaredFields.apply(0).getName
+    val FieldEoriHistory = "eoriHistory"  //classOf[TraderData].getDeclaredFields.apply(1).getName
+    val FieldEmails = "notificationEmail"//classOf[TraderData].getDeclaredFields.apply(2).getName
+    val FieldEmailAddress = "address"//classOf[NotificationEmail].getDeclaredFields.apply(0).getName
     val EoriSearchKey = s"$FieldEoriHistory.$FieldEori"
     val EmailSearchKey = s"$FieldEmails.$FieldEmailAddress"
     val FieldIsValidated = s"$FieldEmails.${classOf[NotificationEmail].getDeclaredFields.apply(1).getName}"
+    //val FieldEoriNumber = s"$FieldEoriHistory.${classOf[EoriPeriod].getDeclaredFields.apply(0).getName}"
   }
     with ReactiveRepository[TraderData, BSONObjectID](
     collectionName = "dataStore",
@@ -99,13 +100,18 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
       case None => Option((FieldIsValidated -> toJsFieldJsValueWrapper(false)))
       case Some(x) => Option((FieldIsValidated -> toJsFieldJsValueWrapper(x.isValidated.getOrElse(false))))  //x.isValidated.getOrElse(false).map(isValidated =>
     }
-    val updateFields =  Seq(updateEmailAddress, updateEmailIsValidated).flatten
+    val updateEoriNumber = eoriPeriod match {
+      case Some(period) =>
+        Option(FieldEoriHistory -> toJsFieldJsValueWrapper (Json.arr (Json.obj (FieldEori -> period.eori) ) ) )
+      case None =>
+        Option( FieldEoriHistory -> toJsFieldJsValueWrapper (Json.arr () ) )
+    }
+    val updateFields =  Seq(updateEmailAddress, updateEmailIsValidated, updateEoriNumber).flatten
     val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(updateFields: _*)))
-    val updateEori = ("$setOnInsert" -> toJsFieldJsValueWrapper(Json.obj(FieldEoriHistory -> Json.arr())))
     println("###updateSet: " + updateSet)
     findAndUpdate(
       query = Json.obj(InternalId -> internalId),
-      update = Json.obj(updateEori, updateSet),
+      update = Json.obj(updateSet),
       upsert = true
     ).map(_.lastError.flatMap(_.err).isEmpty)
   }

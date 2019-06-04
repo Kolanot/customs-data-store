@@ -23,7 +23,7 @@ import reactivemongo.api.commands.WriteResult
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.mongo.MongoConnector
 import org.scalatest.Assertion
-import uk.gov.hmrc.customs.datastore.graphql.InputEmail
+import uk.gov.hmrc.customs.datastore.graphql.{EoriPeriodInput, InputEmail}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -190,7 +190,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
   }
 
   "upsertByInternalId" should {
-    "work without notification email given" in {
+    "work without notification email and eori given" in {
       val traderData1 = TraderData(Option(intId), Seq.empty, Option(NotificationEmail(None, false)) )
 
       await(for {
@@ -230,6 +230,16 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
         _ <- eoriStore.upsertByInternalId(intId, None, Option(email1))
         r1 <- eoriStore.getByInternalId(intId)
         _ <- toFuture(r1.get mustBe  TraderData(Option(intId), Seq.empty, Option(NotificationEmail(Option(address1), true)) ))
+      } yield ())
+    }
+
+    "work with eori option given" in {
+      val eori = "1234567"
+      val eoriPeriod: EoriPeriodInput = EoriPeriodInput(eori, None, None)
+      await(for {
+        _ <- eoriStore.upsertByInternalId(intId, Option(EoriPeriodInput(eori, None, None)), None)
+        r1 <- eoriStore.getByInternalId(intId)
+        _ <- toFuture(r1.get mustBe TraderData(Option(intId), Seq(EoriPeriod(eori, None, None)), Option(NotificationEmail(None, false))))
       } yield ())
     }
   }
