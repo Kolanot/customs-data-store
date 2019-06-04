@@ -18,7 +18,7 @@ package uk.gov.hmrc.customs.datastore.graphql
 
 import sangria.macros.derive._
 import sangria.schema._
-import uk.gov.hmrc.customs.datastore.domain.{NotificationEmail, EmailAddress, EoriPeriod, TraderData}
+import uk.gov.hmrc.customs.datastore.domain.{NotificationEmail, EmailAddress, Eori, EoriPeriod, TraderData}
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.customs.datastore.services.EoriStore
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -41,18 +41,27 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
   val InternalId = "internalId"
   val Address = "address"
   val IsValidated = "isValidated"
+  val EoriField = "eori"
 
   implicit val EoriHistoryType: ObjectType[Unit, EoriPeriod] = deriveObjectType[Unit, EoriPeriod](ObjectTypeName("EoriHistory"))
   implicit val EmailType: ObjectType[Unit, NotificationEmail] = deriveObjectType[Unit, NotificationEmail](ObjectTypeName("Email"))
   implicit val TraderDataType: ObjectType[Unit, TraderData] = deriveObjectType[Unit, TraderData](ObjectTypeName("TraderData"))
 
-  implicit val InputEmailType:InputObjectType[InputEmail] = deriveInputObjectType[InputEmail](InputObjectTypeName("email"))
+  implicit val InputEmailType:InputObjectType[InputEmail] = deriveInputObjectType[InputEmail]()
   implicit val InputEmailUnmarshaller: FromInput[InputEmail] = inputUnmarshaller{
     input => InputEmail(
       address = input.get(Address).flatMap(_.asInstanceOf[Option[EmailAddress]]),
       isValidated = input.get(IsValidated).flatMap(_.asInstanceOf[Option[Boolean]])
     )
   }
+  implicit val InputEoriPeriodType:InputObjectType[EoriPeriodInput] = deriveInputObjectType[EoriPeriodInput]()
+  implicit val InputEoriPeriodTypeUnmarshaller = inputUnmarshaller({
+    input => EoriPeriodInput(
+      eori = input(EoriField).asInstanceOf[Eori],
+      validFrom = input.get("validFrom").flatMap(_.asInstanceOf[Option[String]]),
+      validUntil = input.get("validUntil").flatMap(_.asInstanceOf[Option[String]])
+    )
+  })
 
 
   val Queries: List[Field[Unit, Unit]] = List(
@@ -104,13 +113,14 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
       fieldType = BooleanType,
       arguments = List(
         Argument(InternalId, StringType),
-        Argument("eori", OptionInputType(StringType)),
+        Argument(EoriField, OptionInputType(InputEoriPeriodType)),
         Argument(NotificationEmail, OptionInputType(InputEmailType))
       ),
       resolve = ctx => {
         val internalId = ctx.args.arg[String](InternalId)
         val email = ctx.args.raw.get(NotificationEmail).flatMap(_.asInstanceOf[Option[InputEmail]])
-        eoriStore.upsertByInternalId(internalId,email)
+        val eori = ctx.args.raw.get(EoriField).flatMap(_.asInstanceOf[Option[EoriPeriodInput]])
+        eoriStore.upsertByInternalId(internalId, eori,email)
       }
     )
   )

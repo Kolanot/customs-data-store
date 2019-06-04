@@ -24,7 +24,7 @@ import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.datastore.domain.TraderData._
 import uk.gov.hmrc.customs.datastore.domain._
-import uk.gov.hmrc.customs.datastore.graphql.InputEmail
+import uk.gov.hmrc.customs.datastore.graphql.{EoriPeriodInput, InputEmail}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -92,17 +92,16 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     find(InternalId -> internalId).map(_.headOption)
   }
 
-  def upsertByInternalId(internalId: InternalId, email: Option[InputEmail]):Future[Boolean] = {
+  def upsertByInternalId(internalId: InternalId, eoriPeriod:Option[EoriPeriodInput], email: Option[InputEmail]):Future[Boolean] = {
     println("###upsertByInternalId: " + internalId + " ### " + email)
     val updateEmailAddress = email.flatMap(_.address).map(address => (EmailSearchKey -> toJsFieldJsValueWrapper(address)))
-    val updateIsValidated = email match {
+    val updateEmailIsValidated = email match {
       case None => Option((FieldIsValidated -> toJsFieldJsValueWrapper(false)))
       case Some(x) => Option((FieldIsValidated -> toJsFieldJsValueWrapper(x.isValidated.getOrElse(false))))  //x.isValidated.getOrElse(false).map(isValidated =>
     }
-    val updateFields =  Seq(updateEmailAddress, updateIsValidated).flatten
+    val updateFields =  Seq(updateEmailAddress, updateEmailIsValidated).flatten
     val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(updateFields: _*)))
     val updateEori = ("$setOnInsert" -> toJsFieldJsValueWrapper(Json.obj(FieldEoriHistory -> Json.arr())))
-    //val updateables = Seq(updateEori, updateEmailAddress, updateIsValidated).flatten
     println("###updateSet: " + updateSet)
     findAndUpdate(
       query = Json.obj(InternalId -> internalId),

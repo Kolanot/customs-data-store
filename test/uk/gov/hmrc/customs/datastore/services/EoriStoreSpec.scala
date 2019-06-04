@@ -194,7 +194,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       val traderData1 = TraderData(Option(intId), Seq.empty, Option(NotificationEmail(None, false)) )
 
       await(for {
-        _ <- eoriStore.upsertByInternalId(intId, None)
+        _ <- eoriStore.upsertByInternalId(intId, None, None)
         r1 <- eoriStore.getByInternalId(intId)
         _ <- toFuture(r1.get mustBe traderData1)
       } yield ())
@@ -205,7 +205,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       val email1: InputEmail = InputEmail(Option(address1), None)
 
       await(for {
-        _ <- eoriStore.upsertByInternalId(intId, Option(email1))
+        _ <- eoriStore.upsertByInternalId(intId, None, Option(email1))
         r1 <- eoriStore.getByInternalId(intId)
         _ <- toFuture(r1.get mustBe  TraderData(Option(intId), Seq.empty, Option(NotificationEmail(Option(address1), false)) ))
       } yield ())
@@ -216,7 +216,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       val email1: InputEmail = InputEmail(None, Option(true))
 
       await(for {
-        _ <- eoriStore.upsertByInternalId(intId, Option(email1))
+        _ <- eoriStore.upsertByInternalId(intId, None, Option(email1))
         r1 <- eoriStore.getByInternalId(intId)
         _ <- toFuture(r1.get mustBe  TraderData(Option(intId), Seq.empty, Option(NotificationEmail(None, true)) ))
       } yield ())
@@ -227,7 +227,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       val email1: InputEmail = InputEmail(Option(address1), Option(true))
 
       await(for {
-        _ <- eoriStore.upsertByInternalId(intId, Option(email1))
+        _ <- eoriStore.upsertByInternalId(intId, None, Option(email1))
         r1 <- eoriStore.getByInternalId(intId)
         _ <- toFuture(r1.get mustBe  TraderData(Option(intId), Seq.empty, Option(NotificationEmail(Option(address1), true)) ))
       } yield ())

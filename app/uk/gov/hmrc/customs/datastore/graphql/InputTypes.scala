@@ -16,9 +16,13 @@
 
 package uk.gov.hmrc.customs.datastore.graphql
 
-import uk.gov.hmrc.customs.datastore.domain.EmailAddress
+import uk.gov.hmrc.customs.datastore.domain.{EmailAddress, Eori}
 
 //These types are used for graphql incoming queries
 
 case class InputEmail(address:Option[EmailAddress],
                       isValidated: Option[Boolean])
+
+case class EoriPeriodInput(eori: Eori,
+                      validFrom: Option[String],
+                      validUntil: Option[String])

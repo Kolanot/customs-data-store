@@ -82,53 +82,53 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
   "Upsert byInternalId" should {
     "work without any options given" in new GraphQLScenario {
-      when(mockEoriStore.upsertByInternalId(any(),any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.upsertByInternalId(any(),any(), any())).thenReturn(Future.successful(true))
       val query = s"""{"query" : "mutation {byInternalId(internalId:\\"$internalId\\" )}" }"""
       val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
       val result = contentAsString(controller.graphqlBody.apply(request))
 
       result must include("data")
-      verify(mockEoriStore).upsertByInternalId(is(internalId),is(None))
+      verify(mockEoriStore).upsertByInternalId(is(internalId),is(None),is(None))
     }
 
     "work with empty notificationEmail body" in new GraphQLScenario {
-      when(mockEoriStore.upsertByInternalId(any(),any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.upsertByInternalId(any(),any(),any())).thenReturn(Future.successful(true))
       val query = s"""{"query" : "mutation {byInternalId(internalId:\\"$internalId\\" notificationEmail:{})}" }"""
       val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
       val result = contentAsString(controller.graphqlBody.apply(request))
 
       result must include("data")
-      verify(mockEoriStore).upsertByInternalId(is(internalId),is(Some(InputEmail(None,None))))
+      verify(mockEoriStore).upsertByInternalId(is(internalId),is(None),is(Some(InputEmail(None,None))))
     }
 
     "work with notificationEmail body with address" in new GraphQLScenario {
-      when(mockEoriStore.upsertByInternalId(any(),any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.upsertByInternalId(any(),any(),any())).thenReturn(Future.successful(true))
       val query = s"""{"query" : "mutation {byInternalId(internalId:\\"$internalId\\" notificationEmail:{address:\\"$testEmail\\"})}" }"""
       val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
       val result = contentAsString(controller.graphqlBody.apply(request))
 
       result must include("data")
-      verify(mockEoriStore).upsertByInternalId(is(internalId),is(Some(InputEmail(Some(testEmail),None))))
+      verify(mockEoriStore).upsertByInternalId(is(internalId),is(None),is(Some(InputEmail(Some(testEmail),None))))
     }
 
     "work with notificationEmail body with isValidated" in new GraphQLScenario {
-      when(mockEoriStore.upsertByInternalId(any(),any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.upsertByInternalId(any(),any(),any())).thenReturn(Future.successful(true))
       val query = s"""{"query" : "mutation {byInternalId(internalId:\\"$internalId\\" notificationEmail:{isValidated:true})}" }"""
       val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
       val result = contentAsString(controller.graphqlBody.apply(request))
 
       result must include("data")
-      verify(mockEoriStore).upsertByInternalId(is(internalId),is(Some(InputEmail(None, Some(true)))))
+      verify(mockEoriStore).upsertByInternalId(is(internalId),is(None),is(Some(InputEmail(None, Some(true)))))
     }
 
     "work with notificationEmail body with all fields" in new GraphQLScenario {
-      when(mockEoriStore.upsertByInternalId(any(),any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.upsertByInternalId(any(),any(),any())).thenReturn(Future.successful(true))
       val query = s"""{"query" : "mutation {byInternalId(internalId:\\"$internalId\\" notificationEmail:{address:\\"$testEmail\\" isValidated:true})}" }"""
       val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
       val result = contentAsString(controller.graphqlBody.apply(request))
 
       result must include("data")
-      verify(mockEoriStore).upsertByInternalId(is(internalId),is(Some(InputEmail(Some(testEmail),Some(true)))))
+      verify(mockEoriStore).upsertByInternalId(is(internalId),is(None),is(Some(InputEmail(Some(testEmail),Some(true)))))
     }
 
   }
