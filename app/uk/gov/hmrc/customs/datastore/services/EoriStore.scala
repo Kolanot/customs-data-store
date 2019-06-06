@@ -105,17 +105,20 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
       case Some(period) =>
         val updateEoriValidFrom = period.validFrom.map(vFrom => (FieldEoriValidFrom -> toJsFieldJsValueWrapper(vFrom)))
         val updateEoriValidUntil = period.validUntil.map(vUntil => (FieldEoriValidUntil -> toJsFieldJsValueWrapper(vUntil)))
-        val updatedEoriFields = Seq(Option(FieldEori -> toJsFieldJsValueWrapper(period.eori)),updateEoriValidFrom ,updateEoriValidUntil).flatten
-        Option(FieldEoriHistory -> toJsFieldJsValueWrapper (Json.arr (Json.obj (updatedEoriFields: _*) ) ) )
+        val x = Option(FieldEori -> toJsFieldJsValueWrapper(period.eori))
+        val y = Seq(x,updateEoriValidFrom ,updateEoriValidUntil).flatten
+        ("$addToSet"  -> toJsFieldJsValueWrapper(Json.obj(FieldEoriHistory ->  Json.obj(y: _*))))
       case None =>
-        Option( FieldEoriHistory -> toJsFieldJsValueWrapper (Json.arr () ) )
+        ("$setOnInsert" -> toJsFieldJsValueWrapper(Json.obj(FieldEoriHistory -> Json.arr())))
     }
-    val updateFields =  Seq(updateEmailAddress, updateEmailIsValidated, updateEoriNumber).flatten
+    val updateFields =  Seq(updateEmailAddress, updateEmailIsValidated).flatten
     val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(updateFields: _*)))
+   // val updateEoriSet = ("$addToSet" -> toJsFieldJsValueWrapper(Json.obj(updateEoriNumber: _*)))
     println("###updateSet: " + updateSet)
+    println("@@@@updateEoriNumber: " + updateEoriNumber)
     findAndUpdate(
       query = Json.obj(InternalId -> internalId),
-      update = Json.obj(updateSet),
+      update = Json.obj(updateSet, updateEoriNumber),
       upsert = true
     ).map(_.lastError.flatMap(_.err).isEmpty)
   }

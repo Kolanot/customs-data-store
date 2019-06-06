@@ -277,6 +277,20 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       } yield ())
     }
 
+    "replace validFrom and validUntil on a given eori" in {
+      pending
+      val eori1 = "1234567"
+      val eoriPeriod: EoriPeriodInput = EoriPeriodInput(eori1, None, None)
+      await(for {
+        _ <- eoriStore.upsertByInternalId(intId, Option(EoriPeriodInput(eori1, None, None)), None)
+        r1 <- eoriStore.getByInternalId(intId)
+        _ <- toFuture(r1.get mustBe TraderData(Option(intId), Seq(EoriPeriod(eori1, None, None)), Option(NotificationEmail(None, false))))
+        _ <- eoriStore.upsertByInternalId(intId, Option(EoriPeriodInput(eori1, Some("A"), Some("B"))), None)
+        r2 <- eoriStore.getByInternalId(intId)
+        _ <- toFuture(r2.get mustBe TraderData(Option(intId), Seq(EoriPeriod(eori1, Some("A"), Some("B"))), Option(NotificationEmail(None, false))))
+      } yield ())
+    }
+
     "replace old eori with new eori" in {
       val eori1 = "1234567"
       val eori2 = "1234567890"
@@ -287,7 +301,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
         _ <- toFuture(r1.get mustBe TraderData(Option(intId), Seq(EoriPeriod(eori1, None, None)), Option(NotificationEmail(None, false))))
         _ <- eoriStore.upsertByInternalId(intId, Option(EoriPeriodInput(eori2, None, None)), None)
         r2 <- eoriStore.getByInternalId(intId)
-        _ <- toFuture(r2.get mustBe TraderData(Option(intId), Seq(EoriPeriod(eori2, None, None)), Option(NotificationEmail(None, false))))
+        _ <- toFuture(r2.get mustBe TraderData(Option(intId), Seq(EoriPeriod(eori1, None, None), EoriPeriod(eori2, None, None)), Option(NotificationEmail(None, false))))
       } yield ())
     }
   }
