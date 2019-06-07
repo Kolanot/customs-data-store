@@ -27,6 +27,7 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
 
   val mdg = baseUrl("mdg") /  getConfString("mdg.context","customs-financials-hods-stub")
   val eoriHistoryUrl = mdg / getConfString("mdg.sub21","eorihistory")
+  val authUrl = baseUrl("auth")
 
 
   implicit class URLLike(left:String){

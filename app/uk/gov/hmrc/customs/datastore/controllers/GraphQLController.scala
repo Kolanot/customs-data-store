@@ -24,6 +24,7 @@ import sangria.ast.Document
 import sangria.execution._
 import sangria.marshalling.playJson._
 import sangria.parser.QueryParser
+import uk.gov.hmrc.auth.core.AuthorisedFunctions
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -38,8 +39,8 @@ import scala.util.{Failure, Success, Try}
   * @param executionContext execute program logic asynchronously, typically but not necessarily on a thread pool
   */
 @Singleton
-class GraphQLController @Inject()(graphQL: GraphQL)
-                                 (implicit val executionContext: ExecutionContext) extends BaseController  {
+class GraphQLController @Inject()(override val authConnector: CustomAuthConnector, graphQL: GraphQL)
+                                 (implicit val executionContext: ExecutionContext) extends BaseController with AuthorisedFunctions  {
 
 //  /**
 //    * Renders an page with an in-browser IDE for exploring GraphQL.
@@ -52,32 +53,34 @@ class GraphQLController @Inject()(graphQL: GraphQL)
     */
   def graphqlBody: Action[JsValue] = Action.async(parse.json) {
     implicit request: Request[JsValue] =>
+      authorised() {
 
-      val extract: JsValue => (String, Option[String], Option[JsObject]) = query => (
-        (query \ "query").as[String],
-        (query \ "operationName").asOpt[String],
-        (query \ "variables").toOption.flatMap {
-          case JsString(vars) => Some(parseVariables(vars))
-          case obj: JsObject => Some(obj)
-          case _ => None
+        val extract: JsValue => (String, Option[String], Option[JsObject]) = query => (
+          (query \ "query").as[String],
+          (query \ "operationName").asOpt[String],
+          (query \ "variables").toOption.flatMap {
+            case JsString(vars) => Some(parseVariables(vars))
+            case obj: JsObject => Some(obj)
+            case _ => None
+          }
+        )
+
+        val maybeQuery: Try[(String, Option[String], Option[JsObject])] = Try {
+          request.body match {
+            case arrayBody@JsArray(_) => extract(arrayBody.value(0))
+            case objectBody@JsObject(_) => extract(objectBody)
+            case otherType =>
+              throw new Error {
+                s"/graphql endpoint does not support request body of type [${otherType.getClass.getSimpleName}]"
+              }
+          }
         }
-      )
 
-      val maybeQuery: Try[(String, Option[String], Option[JsObject])] = Try {
-        request.body match {
-          case arrayBody@JsArray(_) => extract(arrayBody.value(0))
-          case objectBody@JsObject(_) => extract(objectBody)
-          case otherType =>
-            throw new Error {
-              s"/graphql endpoint does not support request body of type [${otherType.getClass.getSimpleName}]"
-            }
-        }
-      }
-
-      maybeQuery match {
-        case Success((query, operationName, variables)) => executeQuery(query, variables, operationName)
-        case Failure(error) => Future.successful {
-          BadRequest(error.getMessage)
+        maybeQuery match {
+          case Success((query, operationName, variables)) => executeQuery(query, variables, operationName)
+          case Failure(error) => Future.successful {
+            BadRequest(error.getMessage)
+          }
         }
       }
   }

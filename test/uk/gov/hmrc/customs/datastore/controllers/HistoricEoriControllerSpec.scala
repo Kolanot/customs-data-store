@@ -18,12 +18,14 @@ package uk.gov.hmrc.customs.datastore.controllers
 
 import org.mockito.ArgumentMatchers.{eq => is, _}
 import org.mockito.Mockito.{never, verify, when}
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
+import uk.gov.hmrc.auth.core.MissingBearerToken
 import uk.gov.hmrc.customs.datastore.domain.{EoriPeriod, TraderData}
 import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -31,7 +33,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with DefaultAwaitTimeout with FutureAwaits {
+class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with DefaultAwaitTimeout with FutureAwaits with ScalaFutures {
 
   implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
   implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -40,7 +42,9 @@ class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with Default
   class HistoricControllerScenario() {
     val mockEoriStore = mock[EoriStore]
     val historyService = mock[ETMPHistoryService]
-    val controller = new HistoricEoriController(mockEoriStore, historyService)
+    val mockAuthConnector = mock[CustomAuthConnector]
+    when(mockAuthConnector.authorise[Unit](any(), any())(any(), any())).thenReturn(Future.successful({}))
+    val controller = new HistoricEoriController(mockAuthConnector, mockEoriStore, historyService)
     val fakeRequest = FakeRequest("GET", "/")
   }
 
@@ -88,6 +92,24 @@ class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with Default
         verify(mockEoriStore).getTraderData(is(eori))
         verify(mockEoriStore).insert(any())(any())
         verify(historyService).getHistory(is(eori))(any())
+      }
+    }
+
+    "return unauthorised when bearer token is not supplied" in {
+      val eori = "GB1234567890"
+      val eoriHistory = Seq(EoriPeriod(eori, None, None))
+      new HistoricControllerScenario() {
+        when(mockEoriStore.getTraderData(is(eori)))
+          .thenReturn(Future.successful(Some(TraderData(None,eoriHistory,None))))
+        when(historyService.getHistory(is(eori))(any()))
+          .thenReturn(Future.successful(Nil))
+        when(mockAuthConnector.authorise(any(), any())(any(), any()))
+          .thenReturn(Future.failed(new MissingBearerToken()))
+        whenReady(controller.getEoriHistory(eori)(fakeRequest).failed) {
+          case ex: Throwable => {
+            ex.getMessage mustBe "Bearer token not supplied"
+          }
+        }
       }
     }
 

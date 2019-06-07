@@ -18,12 +18,14 @@ package uk.gov.hmrc.customs.datastore.controllers
 
 import org.mockito.ArgumentMatchers.{eq => is, _}
 import org.mockito.Mockito.{verify, when}
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.words.MatcherWords
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.Helpers.{POST, contentAsString}
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
+import uk.gov.hmrc.auth.core.MissingBearerToken
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.graphql.{EoriPeriodInput, GraphQL, InputEmail, TraderDataSchema}
 import uk.gov.hmrc.customs.datastore.services.{EoriStore, MongoSpecSupport}
@@ -31,7 +33,7 @@ import uk.gov.hmrc.customs.datastore.services.{EoriStore, MongoSpecSupport}
 import scala.concurrent.Future
 
 
-class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with MockitoSugar with MatcherWords{
+class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with MockitoSugar with MatcherWords with ScalaFutures {
 
   val endPoint = "/graphql"
   val internalId = "12345678"
@@ -44,9 +46,13 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
     val mockEoriStore = mock[EoriStore]
+    val mockAuthConnector = mock[CustomAuthConnector]
+
+    when(mockAuthConnector.authorise[Unit](any(), any())(any(), any())).thenReturn(Future.successful({}))
+
     val schema = new TraderDataSchema(mockEoriStore)
     val graphQL = new GraphQL(schema)
-    val controller = new GraphQLController(graphQL)
+    val controller = new GraphQLController(mockAuthConnector, graphQL)
   }
 
   "GraphQLController" should {
@@ -79,6 +85,19 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
       result must include("data")
       result mustNot include("errors")
+    }
+
+    "return unauthorised exception when bearer token is not present" in new GraphQLScenario() {
+      val credentialId:InternalId = "1111111"
+      val eoriNumber:Eori = "GB12345678"
+      val emailAddress = "abc@goodmail.com"
+      when(mockEoriStore.rosmInsert(any(),any(),any(),any())).thenReturn(Future.successful(true))
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.failed(new MissingBearerToken()))
+      val query = s"""{"query" : "mutation {addTrader(credentialId:\\"$credentialId\\" eori:\\"$eoriNumber\\" notificationEmail:\\"$emailAddress\\" isValidated:true )}" }"""
+      val request = FakeRequest(POST, "/graphql").withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
+      whenReady(controller.graphqlBody.apply(request).failed){
+        case ex: Throwable => ex.getMessage mustBe "Bearer token not supplied"
+      }
     }
 
   }
@@ -164,6 +183,15 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       verify(mockEoriStore).upsertByInternalId(is(internalId),is(Some(EoriPeriodInput(testEori, Some(testValidFrom), Some(testValidUntil)))),is(None))
     }
 
+    "return unauthorised exception when bearer token is not supplied" in new GraphQLScenario {
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.failed(new MissingBearerToken()))
+      when(mockEoriStore.upsertByInternalId(any(), any(), any())).thenReturn(Future.successful(true))
+      val query = s"""{"query" : "mutation {byInternalId(internalId:\\"$internalId\\" eoriHistory:{eori:\\"$testEori\\" validFrom:\\"$testValidFrom\\" validUntil:\\"$testValidUntil\\"})}" }"""
+      val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
+      whenReady(controller.graphqlBody.apply(request).failed) {
+        case ex: Throwable => ex.getMessage mustBe "Bearer token not supplied"
+      }
+    }
   }
 
   "query byInternalId" should {
@@ -214,6 +242,17 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       result must include("data")
       verify(mockEoriStore).getByInternalId(is(internalId))
       result mustBe s"""{"data":{"byInternalId":{"internalId":"$internalId"}}}"""
+    }
+
+    "return unauthorised when bearer token is not supplied" in new GraphQLScenario {
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.failed(new MissingBearerToken()))
+      val traderData = TraderData(Option(internalId), Seq.empty, Option(NotificationEmail(Option(testEmail), true)))
+      when(mockEoriStore.getByInternalId(any())).thenReturn(Future.successful(Option(traderData)))
+      val query = s"""{"query" : "query {byInternalId(internalId:\\"$internalId\\") {internalId}}" }"""
+      val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
+      whenReady(controller.graphqlBody.apply(request).failed){
+        case ex: Throwable => ex.getMessage mustBe "Bearer token not supplied"
+      }
     }
   }
 
