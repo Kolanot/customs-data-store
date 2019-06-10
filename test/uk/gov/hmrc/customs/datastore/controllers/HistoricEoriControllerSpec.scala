@@ -99,10 +99,6 @@ class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with Default
       val eori = "GB1234567890"
       val eoriHistory = Seq(EoriPeriod(eori, None, None))
       new HistoricControllerScenario() {
-        when(mockEoriStore.getTraderData(is(eori)))
-          .thenReturn(Future.successful(Some(TraderData(None,eoriHistory,None))))
-        when(historyService.getHistory(is(eori))(any()))
-          .thenReturn(Future.successful(Nil))
         when(mockAuthConnector.authorise(any(), any())(any(), any()))
           .thenReturn(Future.failed(new MissingBearerToken()))
         whenReady(controller.getEoriHistory(eori)(fakeRequest).failed) {

@@ -91,7 +91,6 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val credentialId:InternalId = "1111111"
       val eoriNumber:Eori = "GB12345678"
       val emailAddress = "abc@goodmail.com"
-      when(mockEoriStore.rosmInsert(any(),any(),any(),any())).thenReturn(Future.successful(true))
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.failed(new MissingBearerToken()))
       val query = s"""{"query" : "mutation {addTrader(credentialId:\\"$credentialId\\" eori:\\"$eoriNumber\\" notificationEmail:\\"$emailAddress\\" isValidated:true )}" }"""
       val request = FakeRequest(POST, "/graphql").withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
@@ -183,15 +182,6 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       verify(mockEoriStore).upsertByInternalId(is(internalId),is(Some(EoriPeriodInput(testEori, Some(testValidFrom), Some(testValidUntil)))),is(None))
     }
 
-    "return unauthorised exception when bearer token is not supplied" in new GraphQLScenario {
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.failed(new MissingBearerToken()))
-      when(mockEoriStore.upsertByInternalId(any(), any(), any())).thenReturn(Future.successful(true))
-      val query = s"""{"query" : "mutation {byInternalId(internalId:\\"$internalId\\" eoriHistory:{eori:\\"$testEori\\" validFrom:\\"$testValidFrom\\" validUntil:\\"$testValidUntil\\"})}" }"""
-      val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
-      whenReady(controller.graphqlBody.apply(request).failed) {
-        case ex: Throwable => ex.getMessage mustBe "Bearer token not supplied"
-      }
-    }
   }
 
   "query byInternalId" should {
@@ -242,17 +232,6 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       result must include("data")
       verify(mockEoriStore).getByInternalId(is(internalId))
       result mustBe s"""{"data":{"byInternalId":{"internalId":"$internalId"}}}"""
-    }
-
-    "return unauthorised when bearer token is not supplied" in new GraphQLScenario {
-      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.failed(new MissingBearerToken()))
-      val traderData = TraderData(Option(internalId), Seq.empty, Option(NotificationEmail(Option(testEmail), true)))
-      when(mockEoriStore.getByInternalId(any())).thenReturn(Future.successful(Option(traderData)))
-      val query = s"""{"query" : "query {byInternalId(internalId:\\"$internalId\\") {internalId}}" }"""
-      val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
-      whenReady(controller.graphqlBody.apply(request).failed){
-        case ex: Throwable => ex.getMessage mustBe "Bearer token not supplied"
-      }
     }
   }
 
