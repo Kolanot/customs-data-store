@@ -110,30 +110,29 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     //TODO: replace with simple scenario(s)/test(s) or rename test to reflect purpose
     "Complex email upsert test with preloaded data" in {
       val emails = Option(NotificationEmail(Option("a.b@mail.com"), true))
-      val furueResult = for {
+      await(for {
         _ <- eoriStore.insert(TraderData(credentialId,Seq(period1, period2),emails))
         _ <- eoriStore.insert(TraderData(credentialId,Seq(period5, period6),None)) //To see if the select works correctly
         eoris1 <- eoriStore.getTraderData(period1.eori)
+        _ <- toFuture(eoris1 mustBe Some(TraderData(credentialId,Seq(period1, period2),emails)))
         eoris2 <- eoriStore.getTraderData(period2.eori)
+        _ <- toFuture(eoris2 mustBe Some(TraderData(credentialId,Seq(period1, period2),emails)))
         _ <- eoriStore.saveEoris(Seq(period1, period3))
         eoris3 <- eoriStore.getTraderData(period1.eori)
+        _ <- toFuture(eoris3 mustBe Some(TraderData(credentialId,Seq(period1, period3),emails)))
         eoris4 <- eoriStore.getTraderData(period3.eori)
+        _ <- toFuture(eoris4 mustBe Some(TraderData(credentialId,Seq(period1, period3),emails)))
         _ <- eoriStore.saveEoris(Seq(period3, period4))
         eoris5 <- eoriStore.getTraderData(period3.eori)
+        _ <- toFuture(eoris5 mustBe Some(TraderData(credentialId,Seq(period3, period4),emails)))
         eoris6 <- eoriStore.getTraderData(period4.eori)
+        _ <- toFuture(eoris6 mustBe Some(TraderData(credentialId,Seq(period3, period4),emails)))
         eoris7 <- eoriStore.getTraderData(period5.eori)
+        _ <- toFuture(eoris7 mustBe Some(TraderData(credentialId,Seq(period5, period6),None)))
         eoris8 <- eoriStore.getTraderData(period6.eori)
-      } yield (eoris1, eoris2, eoris3, eoris4, eoris5, eoris6, eoris7, eoris8)
+        _ <- toFuture(eoris8 mustBe Some(TraderData(credentialId,Seq(period5, period6),None)))
+      } yield ())
 
-      val result = await(furueResult)
-      result._1 mustBe Some(TraderData(credentialId,Seq(period1, period2),emails))
-      result._2 mustBe Some(TraderData(credentialId,Seq(period1, period2),emails))
-      result._3 mustBe Some(TraderData(credentialId,Seq(period1, period3),emails))
-      result._4 mustBe Some(TraderData(credentialId,Seq(period1, period3),emails))
-      result._5 mustBe Some(TraderData(credentialId,Seq(period3, period4),emails))
-      result._6 mustBe Some(TraderData(credentialId,Seq(period3, period4),emails))
-      result._7 mustBe Some(TraderData(credentialId,Seq(period5, period6),None))
-      result._8 mustBe Some(TraderData(credentialId,Seq(period5, period6),None))
     }
 
     "save and retrieve email" in {
