@@ -4,4 +4,5 @@ GET        /historiceori/:eori             uk.gov.hmrc.customs.datastore.control
 
 GET        /verifiedEmail/:eori            uk.gov.hmrc.customs.datastore.controllers.SubscriptionEmailController.getVerifiedEmail(eori:String)
 
-POST       /graphql                        uk.gov.hmrc.customs.datastore.controllers.GraphQLController.graphqlBody
+POST       /graphql/standard               uk.gov.hmrc.customs.datastore.controllers.GraphQLController.graphqlBody
+POST       /graphqs/short                  uk.gov.hmrc.customs.datastore.controllers.GraphQLController.graphqlBody

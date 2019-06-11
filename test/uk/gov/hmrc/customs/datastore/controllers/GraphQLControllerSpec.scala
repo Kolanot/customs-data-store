@@ -244,8 +244,9 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
       val result = contentAsString(controller.graphqlBody.apply(request))
 
-      println("result: " + result)
       result must include("data")
+      verify(mockEoriStore).getByInternalId(is(internalId))
+      result mustBe s"""{"data":{"byInternalId":{"eoriHistory":[{"eori":"$eori1","validFrom":"A","validUntil":"B"},{"eori":"$eori2","validFrom":"C","validUntil":"D"}]}}}"""
     }
   }
 
