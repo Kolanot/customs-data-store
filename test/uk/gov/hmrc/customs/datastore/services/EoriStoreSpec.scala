@@ -278,7 +278,6 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     }
 
     "replace validFrom and validUntil on a given eori" in {
-      pending
       val eori1 = "1234567"
       val eoriPeriod: EoriPeriodInput = EoriPeriodInput(eori1, None, None)
       await(for {

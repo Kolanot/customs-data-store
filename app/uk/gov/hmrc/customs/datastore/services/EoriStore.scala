@@ -35,15 +35,16 @@ import scala.concurrent.Future
 class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
   extends {
     val InternalId = "internalId"
-    val FieldEori = "eori"  //classOf[EoriPeriod].getDeclaredFields.apply(0).getName
-    val FieldEoriHistory = "eoriHistory"  //classOf[TraderData].getDeclaredFields.apply(1).getName
+    val FieldEori = "eori"
+    val FieldEoriHistory = "eoriHistory"
     val FieldEoriValidFrom = "validFrom"
     val FieldEoriValidUntil = "validUntil"
-    val FieldEmails = "notificationEmail"//classOf[TraderData].getDeclaredFields.apply(2).getName
-    val FieldEmailAddress = "address"//classOf[NotificationEmail].getDeclaredFields.apply(0).getName
+    val FieldEmails = "notificationEmail"
+    val FieldEmailAddress = "address"
+    val FieldIsValidated = "isValidated"
     val EoriSearchKey = s"$FieldEoriHistory.$FieldEori"
     val EmailSearchKey = s"$FieldEmails.$FieldEmailAddress"
-    val FieldIsValidated = s"$FieldEmails.${classOf[NotificationEmail].getDeclaredFields.apply(1).getName}"
+    val FieldEmailIsValidated = s"$FieldEmails.$FieldIsValidated"
   }
     with ReactiveRepository[TraderData, BSONObjectID](
     collectionName = "dataStore",
@@ -54,7 +55,6 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
 
   override def indexes: Seq[Index] = Seq(
     Index(Seq(EoriSearchKey -> IndexType.Ascending), name = Some(FieldEoriHistory + FieldEori + "Index"), unique = true, sparse = true),
-    //Index(Seq(EmailSearchKey -> IndexType.Ascending), name = Some(FieldEmails + FieldEmailAddress + "Index"), unique = true, sparse = true),
     Index(Seq(InternalId -> IndexType.Ascending), name = Some(InternalId+"Index"), unique = true, sparse = true)
   )
 
@@ -90,37 +90,75 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
   }
 
   def getByInternalId(internalId:InternalId):Future[Option[TraderData]] = {
-    println("### getByInternalId: " + internalId)
     find(InternalId -> internalId).map(_.headOption)
   }
 
   def upsertByInternalId(internalId: InternalId, eoriPeriod:Option[EoriPeriodInput], email: Option[InputEmail]):Future[Boolean] = {
-    println("###upsertByInternalId: " + internalId + " ### " + email)
-    val updateEmailAddress = email.flatMap(_.address).map(address => (EmailSearchKey -> toJsFieldJsValueWrapper(address)))
-    val updateEmailIsValidated = email match {
-      case None => Option((FieldIsValidated -> toJsFieldJsValueWrapper(false)))
-      case Some(x) => Option((FieldIsValidated -> toJsFieldJsValueWrapper(x.isValidated.getOrElse(false))))  //x.isValidated.getOrElse(false).map(isValidated =>
+    find(InternalId -> internalId)
+      .map(_.headOption.map(_.eoriHistory.map(_.eori)).getOrElse(Seq.empty))
+      .flatMap{ in =>
+
+        val updateEmailAddress = email.flatMap(_.address).map(address => (EmailSearchKey -> toJsFieldJsValueWrapper(address)))
+        val updateEmailIsValidated = email match {
+          case None => Option((FieldEmailIsValidated -> toJsFieldJsValueWrapper(false)))
+          case Some(x) => Option((FieldEmailIsValidated -> toJsFieldJsValueWrapper(x.isValidated.getOrElse(false))))  //x.isValidated.getOrElse(false).map(isValidated =>
+        }
+        val updateEmailFields =  Seq(updateEmailAddress, updateEmailIsValidated).flatten
+        val eoriUpdates = eoriPeriod match {
+          case Some(period) =>
+            val updateEoriValidFrom = period.validFrom.map(vFrom => (FieldEoriValidFrom -> toJsFieldJsValueWrapper(vFrom)))
+            val updateEoriValidUntil = period.validUntil.map(vUntil => (FieldEoriValidUntil -> toJsFieldJsValueWrapper(vUntil)))
+            val updateEori = Option(FieldEori -> toJsFieldJsValueWrapper(period.eori))
+            Seq(updateEori,updateEoriValidFrom ,updateEoriValidUntil).flatten
+            //("$addToSet"  -> toJsFieldJsValueWrapper(Json.obj(FieldEoriHistory ->  Json.obj(y: _*))))
+          case None =>
+            Nil
+        }
+
+        val eorisInMongo = in.toSeq
+        val result1 = eoriPeriod match {
+          case Some(newEori) => //We want to update an eori
+            (eorisInMongo.contains(newEori.eori)) match {
+              case true => //The Eori we want to insert already exists in the database
+                val allEoriUpdates = eoriUpdates.map(eu => (FieldEoriHistory+ ".$[x]." + eu._1 -> eu._2))
+                val eoriRelated = ("$set"  -> toJsFieldJsValueWrapper(Json.obj(allEoriUpdates: _*)))
+                findAndUpdate(  //For some reason I am unable to submit eori updates at a position and email updates in the same Json object
+                  query = Json.obj(InternalId -> internalId),
+                  update = Json.obj(eoriRelated),
+                  upsert = true,
+                  arrayFilters = Seq(Json.obj(s"x.$FieldEori" -> newEori.eori))
+                ).flatMap{ otherQuery =>
+                  val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(updateEmailFields: _*)))
+                  findAndUpdate(
+                    query = Json.obj(InternalId -> internalId),
+                    update = Json.obj(updateSet),
+                    upsert = true
+                  )
+                }
+              case false => //The Eori we want to insert is not in the database
+                val eoriRelated = (FieldEoriHistory -> toJsFieldJsValueWrapper(Json.obj(eoriUpdates: _*)))
+                val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(updateEmailFields: _*)))
+                val eoriSet = ("$addToSet" -> toJsFieldJsValueWrapper(Json.obj(eoriRelated)))
+                findAndUpdate(
+                  query = Json.obj(InternalId -> internalId),
+                  update = Json.obj(updateSet,eoriSet),
+                  upsert = true
+                )
+
+            }
+          case None => //We do not update any eori
+            val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(updateEmailFields: _*)))
+            val eoriField = ("$setOnInsert" -> toJsFieldJsValueWrapper(Json.obj(FieldEoriHistory -> Json.arr())))
+            findAndUpdate(
+              query = Json.obj(InternalId -> internalId),
+              update = Json.obj(updateSet,eoriField),
+              upsert = true
+            )
+        }
+        result1.map(_.lastError.flatMap(_.err).isEmpty)
+
     }
-    val updateEoriNumber = eoriPeriod match {
-      case Some(period) =>
-        val updateEoriValidFrom = period.validFrom.map(vFrom => (FieldEoriValidFrom -> toJsFieldJsValueWrapper(vFrom)))
-        val updateEoriValidUntil = period.validUntil.map(vUntil => (FieldEoriValidUntil -> toJsFieldJsValueWrapper(vUntil)))
-        val x = Option(FieldEori -> toJsFieldJsValueWrapper(period.eori))
-        val y = Seq(x,updateEoriValidFrom ,updateEoriValidUntil).flatten
-        ("$addToSet"  -> toJsFieldJsValueWrapper(Json.obj(FieldEoriHistory ->  Json.obj(y: _*))))
-      case None =>
-        ("$setOnInsert" -> toJsFieldJsValueWrapper(Json.obj(FieldEoriHistory -> Json.arr())))
-    }
-    val updateFields =  Seq(updateEmailAddress, updateEmailIsValidated).flatten
-    val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(updateFields: _*)))
-   // val updateEoriSet = ("$addToSet" -> toJsFieldJsValueWrapper(Json.obj(updateEoriNumber: _*)))
-    println("###updateSet: " + updateSet)
-    println("@@@@updateEoriNumber: " + updateEoriNumber)
-    findAndUpdate(
-      query = Json.obj(InternalId -> internalId),
-      update = Json.obj(updateSet, updateEoriNumber),
-      upsert = true
-    ).map(_.lastError.flatMap(_.err).isEmpty)
+
   }
 
 
