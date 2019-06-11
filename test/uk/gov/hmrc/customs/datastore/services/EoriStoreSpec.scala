@@ -31,7 +31,7 @@ import scala.concurrent.Future
 class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with BeforeAndAfterEach {
 
   override def beforeEach: Unit = {
-    //await(eoriStore.removeAll())
+        //await(eoriStore.removeAll())
     await(eoriStore.drop)
   }
 
