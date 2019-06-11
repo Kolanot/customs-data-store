@@ -233,6 +233,20 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       verify(mockEoriStore).getByInternalId(is(internalId))
       result mustBe s"""{"data":{"byInternalId":{"internalId":"$internalId"}}}"""
     }
+
+    "return list of eoris" in new GraphQLScenario {
+      val eori1 = "EORI-1"
+      val eori2 = "EORI-2"
+      val eoris = Seq(EoriPeriod(eori1,Some("A"),Some("B")),EoriPeriod(eori2, Some("C"),Some("D")))
+      val traderData = TraderData(Option(internalId), eoris , Option(NotificationEmail(Option(testEmail), true)))
+      when(mockEoriStore.getByInternalId(any())).thenReturn(Future.successful(Option(traderData)))
+      val query = s"""{"query" : "query {byInternalId(internalId:\\"$internalId\\") {eoriHistory {eori, validFrom, validUntil}}}"}"""
+      val request = FakeRequest(POST, endPoint).withHeaders(("Content-Type", "application/json")).withBody(Json.parse(query))
+      val result = contentAsString(controller.graphqlBody.apply(request))
+
+      println("result: " + result)
+      result must include("data")
+    }
   }
 
 }
