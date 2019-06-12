@@ -93,15 +93,23 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     find(InternalId -> internalId).map(_.headOption)
   }
 
+  /**
+    * This code looks hideous. Unfortunately it seems mongo is unable to upsert objects inside an array. So I had to fall back to
+    * 1. Query the document to decide if the there is an object with the given Eori inside the array
+    *  a. If the eori is there already, we update the array at the given position
+    *  b. If the eori is not there , we add it to the collection
+    * And it gets even more complicated because it seems you cannot do arrayFilters (update the array at a given position) and
+    * upsert other parts of the document at the same time, so in this case I had to split the update into 2 parts
+    */
   def upsertByInternalId(internalId: InternalId, eoriPeriod:Option[EoriPeriodInput], email: Option[InputEmail]):Future[Boolean] = {
     find(InternalId -> internalId)
       .map(_.headOption.map(_.eoriHistory.map(_.eori)).getOrElse(Seq.empty))
-      .flatMap{ in =>
+      .flatMap{ eorisInMongo =>
 
         val updateEmailAddress = email.flatMap(_.address).map(address => (EmailSearchKey -> toJsFieldJsValueWrapper(address)))
         val updateEmailIsValidated = email match {
           case None => Option((FieldEmailIsValidated -> toJsFieldJsValueWrapper(false)))
-          case Some(x) => Option((FieldEmailIsValidated -> toJsFieldJsValueWrapper(x.isValidated.getOrElse(false))))  //x.isValidated.getOrElse(false).map(isValidated =>
+          case Some(x) => Option((FieldEmailIsValidated -> toJsFieldJsValueWrapper(x.isValidated.getOrElse(false))))
         }
         val updateEmailFields =  Seq(updateEmailAddress, updateEmailIsValidated).flatten
         val eoriUpdates = eoriPeriod match {
@@ -110,12 +118,10 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
             val updateEoriValidUntil = period.validUntil.map(vUntil => (FieldEoriValidUntil -> toJsFieldJsValueWrapper(vUntil)))
             val updateEori = Option(FieldEori -> toJsFieldJsValueWrapper(period.eori))
             Seq(updateEori,updateEoriValidFrom ,updateEoriValidUntil).flatten
-            //("$addToSet"  -> toJsFieldJsValueWrapper(Json.obj(FieldEoriHistory ->  Json.obj(y: _*))))
           case None =>
             Nil
         }
 
-        val eorisInMongo = in.toSeq
         val result1 = eoriPeriod match {
           case Some(newEori) => //We want to update an eori
             (eorisInMongo.contains(newEori.eori)) match {
