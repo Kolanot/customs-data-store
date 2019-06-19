@@ -67,8 +67,11 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
   val Queries: List[Field[Unit, Unit]] = List(
     Field(
       name = "trader",
-      fieldType = ListType(TraderDataType),
-      resolve = _ => eoriStore.getTraderData("1234").map(_.toList)
+      fieldType = OptionType(TraderDataType),
+      arguments = List(
+        Argument("eori", StringType)
+      ),
+      resolve = sangriaContext => eoriStore.getTraderData(sangriaContext.args.arg[String]("eori"))
     ),
     Field(
       name = "findEmail",
