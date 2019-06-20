@@ -28,7 +28,7 @@ import scala.concurrent.Future
 class ServerTokenAuthorization @Inject()(appConfig: AppConfig) extends ActionBuilder[Request] with ActionFilter[Request] {
   override def filter[A](request: Request[A]): Future[Option[Result]] = {
     val incomingAuthHeader = request.headers.toMap.get("Authorization").getOrElse(Nil)
-    val authToken = appConfig.authToken
+    val authToken = appConfig.serverToken
 
     incomingAuthHeader.find(_ == authToken) match {
       case Some(token) => Future.successful(None)
