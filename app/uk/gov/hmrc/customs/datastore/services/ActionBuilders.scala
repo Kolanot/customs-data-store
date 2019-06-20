@@ -27,10 +27,11 @@ import scala.concurrent.Future
 @Singleton
 class ServerTokenAuthorization @Inject()(appConfig: AppConfig) extends ActionBuilder[Request] with ActionFilter[Request] {
   override def filter[A](request: Request[A]): Future[Option[Result]] = {
-    val incomingAuthHeader = request.headers.get("Authorization")
+    val incomingAuthHeader = request.headers.toMap.get("Authorization").getOrElse(Nil)
     val authToken = appConfig.authToken
-    incomingAuthHeader.map(_ == authToken) match {
-      case Some(true) => Future.successful(None)
+
+    incomingAuthHeader.find(_ == authToken) match {
+      case Some(token) => Future.successful(None)
       case _ => Future.successful(Some(Unauthorized("Please provide valid auth token to access this endpoint")))
     }
   }
