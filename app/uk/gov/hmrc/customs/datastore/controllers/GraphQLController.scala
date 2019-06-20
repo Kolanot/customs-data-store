@@ -25,6 +25,7 @@ import sangria.execution._
 import sangria.marshalling.playJson._
 import sangria.parser.QueryParser
 import uk.gov.hmrc.auth.core.AuthorisedFunctions
+import uk.gov.hmrc.customs.datastore.services.ServerTokenAuthorization
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -39,21 +40,16 @@ import scala.util.{Failure, Success, Try}
   * @param executionContext execute program logic asynchronously, typically but not necessarily on a thread pool
   */
 @Singleton
-class GraphQLController @Inject()(override val authConnector: CustomAuthConnector, graphQL: GraphQL)
-                                 (implicit val executionContext: ExecutionContext) extends BaseController with AuthorisedFunctions  {
-
-//  /**
-//    * Renders an page with an in-browser IDE for exploring GraphQL.
-//    */
+class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, graphQL: GraphQL)
+                                 (implicit val executionContext: ExecutionContext) extends BaseController {
 
   /**
     * Parses graphql body of incoming request.
     *
     * @return an 'Action' to handles a request and generates a result to be sent to the client
     */
-  def graphqlBody: Action[JsValue] = Action.async(parse.json) {
+  def graphqlBody(): Action[JsValue] = serverAuth.async(parse.json) {
     implicit request: Request[JsValue] =>
-      authorised() {
 
         val extract: JsValue => (String, Option[String], Option[JsObject]) = query => (
           (query \ "query").as[String],
@@ -82,7 +78,6 @@ class GraphQLController @Inject()(override val authConnector: CustomAuthConnecto
             BadRequest(error.getMessage)
           }
         }
-      }
   }
 
   /**

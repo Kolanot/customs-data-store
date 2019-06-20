@@ -29,6 +29,8 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
   val eoriHistoryUrl = mdg / getConfString("mdg.sub21","eorihistory")
   val authUrl = baseUrl("auth")
 
+  val authToken = runModeConfiguration.getString("auth-token").get
+
 
   implicit class URLLike(left:String){
     def /(right:String):String = checkEnding(left) + "/" + checkBeginning(right)
