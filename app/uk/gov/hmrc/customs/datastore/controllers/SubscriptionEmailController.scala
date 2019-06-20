@@ -28,7 +28,7 @@ import scala.concurrent.ExecutionContext
 
 class SubscriptionEmailController @Inject()(eoriStore: EoriStore)(implicit ec: ExecutionContext) extends BaseController {
 
-  def getVerifiedEmail(eori: String): Action[AnyContent] = Action.async { implicit request =>
+  def getEmail(eori: String): Action[AnyContent] = Action.async { implicit request =>
     eoriStore.getEmail(eori).map(emails => Ok(Json.toJson(emails)).as(Http.MimeTypes.JSON))
   }
 }

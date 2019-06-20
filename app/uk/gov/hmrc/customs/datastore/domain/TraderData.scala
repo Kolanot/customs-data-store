@@ -22,12 +22,10 @@ case class EoriPeriod(eori: Eori,
                       validFrom: Option[String],
                       validUntil: Option[String])
 
-case class NotificationEmail(address: Option[EmailAddress],
-                             isValidated: Boolean)
+case class NotificationEmail(address: Option[EmailAddress])
 
 
-case class TraderData(internalId: Option[InternalId],
-                      eoriHistory: Seq[EoriPeriod],
+case class TraderData(eoriHistory: Seq[EoriPeriod],
                       notificationEmail:Option[NotificationEmail])
 
 object TraderData {

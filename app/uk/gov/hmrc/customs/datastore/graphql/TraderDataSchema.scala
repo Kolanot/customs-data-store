@@ -16,15 +16,12 @@
 
 package uk.gov.hmrc.customs.datastore.graphql
 
-import sangria.macros.derive._
-import sangria.schema._
-import uk.gov.hmrc.customs.datastore.domain.{NotificationEmail, EmailAddress, Eori, EoriPeriod, TraderData}
 import javax.inject.{Inject, Singleton}
-import uk.gov.hmrc.customs.datastore.services.EoriStore
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import sangria.marshalling.FromInput
-
+import sangria.macros.derive._
 import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput, ResultMarshaller}
+import sangria.schema._
+import uk.gov.hmrc.customs.datastore.domain._
+import uk.gov.hmrc.customs.datastore.services.EoriStore
 
 trait InputUnmarshallerGenerator {
 
@@ -38,9 +35,7 @@ trait InputUnmarshallerGenerator {
 class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshallerGenerator{
 
   val NotificationEmail = "notificationEmail"
-  val InternalId = "internalId"
   val Address = "address"
-  val IsValidated = "isValidated"
   val EoriField = "eoriHistory"
 
   implicit val EoriHistoryType: ObjectType[Unit, EoriPeriod] = deriveObjectType[Unit, EoriPeriod](ObjectTypeName("EoriHistory"))
@@ -48,11 +43,8 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
   implicit val TraderDataType: ObjectType[Unit, TraderData] = deriveObjectType[Unit, TraderData](ObjectTypeName("TraderData"))
 
   implicit val InputEmailType:InputObjectType[InputEmail] = deriveInputObjectType[InputEmail]()
-  implicit val InputEmailUnmarshaller: FromInput[InputEmail] = inputUnmarshaller{
-    input => InputEmail(
-      address = input.get(Address).flatMap(_.asInstanceOf[Option[EmailAddress]]),
-      isValidated = input.get(IsValidated).flatMap(_.asInstanceOf[Option[Boolean]])
-    )
+  implicit val InputEmailUnmarshaller: FromInput[InputEmail] = inputUnmarshaller {
+    input => InputEmail(address = input.get(Address).flatMap(_.asInstanceOf[Option[EmailAddress]]))
   }
   implicit val InputEoriPeriodType:InputObjectType[EoriPeriodInput] = deriveInputObjectType[EoriPeriodInput]()
   implicit val InputEoriPeriodTypeUnmarshaller = inputUnmarshaller({
@@ -80,12 +72,6 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
         Argument("eori", StringType)
       ),
       resolve = sangriaContext => eoriStore.getTraderData(sangriaContext.args.arg[String]("eori"))
-    ),
-    Field(
-      name = "byInternalId",
-      fieldType = OptionType(TraderDataType),
-      arguments = List(Argument(InternalId,StringType)),
-      resolve = ctx => eoriStore.getByInternalId(ctx.args.arg[String](InternalId))
     )
   )
 
@@ -98,35 +84,15 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
       name = "addTrader",
       fieldType = BooleanType,
       arguments = List(
-        Argument("credentialId", StringType),
         Argument("eori", StringType),
-        Argument("notificationEmail", StringType),
-        Argument("isValidated", BooleanType)
+        Argument("notificationEmail", StringType)
       ),
       resolve = sangriaContext =>
         eoriStore.rosmInsert(
-          sangriaContext.args.arg[String]("credentialId"),
           sangriaContext.args.arg[String]("eori"),
-          sangriaContext.args.arg[String]("notificationEmail"),
-          sangriaContext.args.arg[Boolean]("isValidated")
+          sangriaContext.args.arg[String]("notificationEmail")
         )
-    ),
-    Field(
-      name = "byInternalId",
-      fieldType = BooleanType,
-      arguments = List(
-        Argument(InternalId, StringType),
-        Argument(EoriField, OptionInputType(InputEoriPeriodType)),
-        Argument(NotificationEmail, OptionInputType(InputEmailType))
-      ),
-      resolve = ctx => {
-        val internalId = ctx.args.arg[String](InternalId)
-        val email = ctx.args.raw.get(NotificationEmail).flatMap(_.asInstanceOf[Option[InputEmail]])
-        val eori = ctx.args.raw.get(EoriField).flatMap(_.asInstanceOf[Option[EoriPeriodInput]])
-        eoriStore.upsertByInternalId(internalId, eori,email)
-      }
     )
   )
-
 
 }

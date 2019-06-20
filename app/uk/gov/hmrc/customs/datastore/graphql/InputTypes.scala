@@ -20,8 +20,7 @@ import uk.gov.hmrc.customs.datastore.domain.{EmailAddress, Eori}
 
 //These types are used for graphql incoming queries
 
-case class InputEmail(address:Option[EmailAddress],
-                      isValidated: Option[Boolean])
+case class InputEmail(address:Option[EmailAddress])
 
 case class EoriPeriodInput(eori: Eori,
                       validFrom: Option[String],

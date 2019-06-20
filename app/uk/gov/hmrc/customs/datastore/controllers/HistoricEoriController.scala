@@ -36,7 +36,7 @@ class HistoricEoriController @Inject()(val authConnector: CustomAuthConnector, e
         case None =>
           etmp.getHistory(eori)
             .map { eoriPeriods =>
-              eoriStore.insert(TraderData(None, eoriPeriods, None))
+              eoriStore.insert(TraderData(eoriPeriods, None))
               eoriPeriods
             }
         case Some(traderData) =>

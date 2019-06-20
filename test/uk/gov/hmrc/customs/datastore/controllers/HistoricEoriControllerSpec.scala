@@ -55,7 +55,7 @@ class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with Default
       val eoriHistory = Seq(EoriPeriod(eori, None, None))
       new HistoricControllerScenario() {
         when(mockEoriStore.getTraderData(is(eori)))
-          .thenReturn(Future.successful(Some(TraderData(None,eoriHistory,None))))
+          .thenReturn(Future.successful(Some(TraderData(eoriHistory,None))))
         when(historyService.getHistory(is(eori))(any()))
           .thenReturn(Future.successful(Nil))
         val result = controller.getEoriHistory(eori)(fakeRequest)
@@ -69,7 +69,7 @@ class HistoricEoriControllerSpec extends PlaySpec with MockitoSugar with Default
       val eoriHistory = Seq(EoriPeriod(eori, None, None))
       new HistoricControllerScenario() {
         when(mockEoriStore.getTraderData(is(eori)))
-          .thenReturn(Future.successful(Some(TraderData(None,eoriHistory,None))))
+          .thenReturn(Future.successful(Some(TraderData(eoriHistory,None))))
         when(historyService.getHistory(is(eori))(any()))
           .thenReturn(Future.successful(Nil))
         await(controller.getEoriHistory(eori)(fakeRequest))

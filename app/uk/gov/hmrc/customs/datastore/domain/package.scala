@@ -20,6 +20,5 @@ package object domain {
 
   type Eori = String
   type EmailAddress = String
-  type InternalId = String
 
 }
