@@ -90,7 +90,7 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
     * @return simple result, which defines the response header and a body ready to send to the client
     */
   def executeQuery(query: String, variables: Option[JsObject] = None, operation: Option[String] = None): Future[Result] = {
-    Logger.logger.info(s"query: $query")
+    Logger.info(s"query: $query")
     QueryParser.parse(query) match {
       case Success(queryAst: Document) =>
         Executor.execute(
@@ -99,10 +99,10 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
         variables = variables.getOrElse(Json.obj())
       ).map(Ok(_))
         .recover {
-          case error: QueryAnalysisError => Logger.logger.error(s"graphql error: ${error.getMessage}"); BadRequest(error.resolveError)
-          case error: ErrorWithResolver => Logger.logger.error(s"graphql error: ${error.getMessage}"); InternalServerError(error.resolveError)
+          case error: QueryAnalysisError => Logger.error(s"graphql error: ${error.getMessage}"); BadRequest(error.resolveError)
+          case error: ErrorWithResolver => Logger.error(s"graphql error: ${error.getMessage}"); InternalServerError(error.resolveError)
         }
-      case Failure(ex) => Logger.logger.error(s"graphql error: ${ex.getMessage}"); Future(BadRequest(s"${ex.getMessage}"))
+      case Failure(ex) => Logger.error(s"graphql error: ${ex.getMessage}"); Future(BadRequest(s"${ex.getMessage}"))
     }
   }
 
