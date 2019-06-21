@@ -79,7 +79,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
     * List of mutations to work with the entity of TraderData.
     */
   val Mutations: List[Field[Unit, Unit]] = List(
-    //Example: {"query" : "mutation {addTrader(credentialId:\"1111111\" eori:\"GB12345678\" notificationEmail:\"abc@goodmail.com\" isValidated:true )}" }
+    //Example: {"query" : "mutation {addTrader(eori:\"GB12345678\" notificationEmail:\"abc@goodmail.com\")}" }
     Field(
       name = "addTrader",
       fieldType = BooleanType,
