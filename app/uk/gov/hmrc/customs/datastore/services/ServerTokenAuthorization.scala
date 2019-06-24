@@ -18,6 +18,7 @@ package uk.gov.hmrc.customs.datastore.services
 
 import com.google.inject.Singleton
 import javax.inject.Inject
+import play.api.Logger
 import play.api.mvc.{ActionBuilder, ActionFilter, Request, Result}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import play.api.mvc.Results._
@@ -27,6 +28,7 @@ import scala.concurrent.Future
 @Singleton
 class ServerTokenAuthorization @Inject()(appConfig: AppConfig) extends ActionBuilder[Request] with ActionFilter[Request] {
   override def filter[A](request: Request[A]): Future[Option[Result]] = {
+    Logger.debug(s"authorize request")
     val incomingAuthHeader = request.headers.toMap.get("Authorization").getOrElse(Nil)
     val serverToken = appConfig.serverToken
 

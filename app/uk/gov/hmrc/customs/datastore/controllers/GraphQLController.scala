@@ -52,6 +52,8 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
   def graphqlBody(): Action[JsValue] = serverAuth.async(parse.json) {
     implicit request: Request[JsValue] =>
 
+      Logger.info(s"parsing request: ${request.body}")
+
         val extract: JsValue => (String, Option[String], Option[JsObject]) = query => (
           (query \ "query").as[String],
           (query \ "operationName").asOpt[String],
@@ -76,7 +78,7 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
         maybeQuery match {
           case Success((query, operationName, variables)) => executeQuery(query, variables, operationName)
           case Failure(error) => Future.successful {
-            BadRequest(error.getMessage)
+            Logger.error(s"graphql query parsing error: ${error.getMessage}"); BadRequest(error.getMessage)
           }
         }
   }
