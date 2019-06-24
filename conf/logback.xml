@@ -53,6 +53,10 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
+    <logger name="play.core.netty.utils" level="WARN"/>
+
+    <logger name="org.asynchttpclient.netty.channel" level="WARN"/>
+
     <root level="INFO">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
