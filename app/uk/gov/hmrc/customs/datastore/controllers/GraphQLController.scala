@@ -43,13 +43,13 @@ import scala.util.{Failure, Success, Try}
 @Singleton
 class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, graphQL: GraphQL)
                                  (implicit val executionContext: ExecutionContext) extends BaseController {
-
+Logger.warn("GraphQLController started ")
   /**
     * Parses graphql body of incoming request.
     *
     * @return an 'Action' to handles a request and generates a result to be sent to the client
     */
-  def graphqlBody(): Action[JsValue] = serverAuth.async(parse.json) {
+  def graphqlBody(): Action[JsValue] = Action.async(parse.json) {
     implicit request: Request[JsValue] =>
 
       Logger.warn(s"parsing request: ${request.body}")
