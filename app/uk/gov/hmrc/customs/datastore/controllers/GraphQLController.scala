@@ -63,7 +63,8 @@ Logger.warn("GraphQLController started ")
   def graphqlBody(): Action[String] = Action.async(parse.tolerantText) {
     implicit request: Request[String] =>
 
-      Logger.warn(s"parsing request: ${request.body}")
+      Logger.warn("Grapql Request: " + request)
+      Logger.warn(s"Grapql Request body: ${request.body}")
 
         val extract: JsValue => (String, Option[String], Option[JsObject]) = query => (
           (query \ "query").as[String],
