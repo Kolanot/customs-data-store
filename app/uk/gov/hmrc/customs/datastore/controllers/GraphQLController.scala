@@ -49,8 +49,8 @@ Logger.warn("GraphQLController started ")
     *
     * @return an 'Action' to handles a request and generates a result to be sent to the client
     */
-  def graphqlBody(): Action[JsValue] = Action.async(parse.json) {
-    implicit request: Request[JsValue] =>
+  def graphqlBody(): Action[String] = Action.async(parse.tolerantText) {
+    implicit request: Request[String] =>
 
       Logger.warn(s"parsing request: ${request.body}")
 
@@ -65,7 +65,7 @@ Logger.warn("GraphQLController started ")
         )
 
         val maybeQuery: Try[(String, Option[String], Option[JsObject])] = Try {
-          request.body match {
+          Json.parse(request.body) match {
             case arrayBody@JsArray(_) => extract(arrayBody.value(0))
             case objectBody@JsObject(_) => extract(objectBody)
             case otherType =>

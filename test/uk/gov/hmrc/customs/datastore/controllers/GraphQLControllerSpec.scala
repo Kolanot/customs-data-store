@@ -63,7 +63,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       pending
       val eoriNumber:Eori = "GB12345678"
       val query = s"""{ "query": "query { findEmail( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
-      val unauthorizedRequest = FakeRequest(POST, "/graphql").withHeaders("Content-Type" -> "application/json").withBody(Json.parse(query))
+      val unauthorizedRequest = FakeRequest(POST, "/graphql").withHeaders("Content-Type" -> "application/json").withBody(query)
       val respone = controller.graphqlBody.apply(unauthorizedRequest)
       status(respone) mustBe UNAUTHORIZED
     }
@@ -76,7 +76,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
         Option(NotificationEmail(Option(emailAddress))))
       when(mockEoriStore.getTraderData(any())).thenReturn(Future.successful(Option(traderData)) )
       val query = s"""{ "query": "query { findEmail( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
-      val request = authorizedRequest.withBody(Json.parse(query))
+      val request = authorizedRequest.withBody(query)
       val result = contentAsString(controller.graphqlBody.apply(request))
       result must include("data")
       result mustNot include("errors")
@@ -90,7 +90,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val emailAddress = "abc@goodmail.com"
       when(mockEoriStore.rosmInsert(any(),any())).thenReturn(Future.successful(true))
       val query = s"""{"query" : "mutation {addTrader(eori:\\"$eoriNumber\\" notificationEmail:\\"$emailAddress\\")}" }"""
-      val request = authorizedRequest.withBody(Json.parse(query))
+      val request = authorizedRequest.withBody(query)
       val result = contentAsString(controller.graphqlBody.apply(request))
 
       result must include("data")
