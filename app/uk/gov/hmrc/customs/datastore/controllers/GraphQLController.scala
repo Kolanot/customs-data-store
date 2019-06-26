@@ -44,6 +44,17 @@ import scala.util.{Failure, Success, Try}
 class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, graphQL: GraphQL)
                                  (implicit val executionContext: ExecutionContext) extends BaseController {
 Logger.warn("GraphQLController started ")
+
+
+  def connectivityGet() = Action { implicit request =>
+    Logger.warn(s"parsing GET request: ${request}")
+    Ok("GET Request OK")
+  }
+  def connectivityPost() = Action { implicit request =>
+    Logger.warn(s"parsing POST request: ${request}")
+    Ok("POST Request OK")
+  }
+
   /**
     * Parses graphql body of incoming request.
     *
