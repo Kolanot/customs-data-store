@@ -7,4 +7,4 @@ GET        /verifiedEmail/:eori            uk.gov.hmrc.customs.datastore.control
 POST       /graphql                        uk.gov.hmrc.customs.datastore.controllers.GraphQLController.graphqlBody
 
 GET        /connectivityGet                uk.gov.hmrc.customs.datastore.controllers.GraphQLController.connectivityGet
-POST       /connectivityPost               uk.gov.hmrc.customs.datastore.controllers.GraphQLController.connectivityGet
+POST       /connectivityPost               uk.gov.hmrc.customs.datastore.controllers.GraphQLController.connectivityPost
