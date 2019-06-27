@@ -60,7 +60,6 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
   "GraphQLController" should {
     "return unauthorised exception when auth token is not present" in new GraphQLScenario() {
-      pending
       val eoriNumber:Eori = "GB12345678"
       val query = s"""{ "query": "query { findEmail( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
       val unauthorizedRequest = FakeRequest(POST, "/graphql").withHeaders("Content-Type" -> "application/json").withBody(query)
