@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.customs.datastore.controllers
 
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito.when
+import org.mockito.ArgumentMatchers.{eq => is , _}
+import org.mockito.Mockito.{when,verify}
 import org.scalatest.Pending
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
@@ -29,7 +29,7 @@ import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
-import uk.gov.hmrc.customs.datastore.graphql.{GraphQL, TraderDataSchema}
+import uk.gov.hmrc.customs.datastore.graphql.{EoriPeriodInput, GraphQL, InputEmail, TraderDataSchema}
 import uk.gov.hmrc.customs.datastore.services.{EoriStore, MongoSpecSupport, ServerTokenAuthorization}
 
 import scala.concurrent.Future
@@ -42,6 +42,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
   val testEori = "122334454"
   val testValidFrom = "20180101"
   val testValidUntil = "20200101"
+  val testTimestamp = "timestamp"
 
   class GraphQLScenario() {
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -72,8 +73,8 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val emailAddress = "abc@goodmail.com"
       val traderData = TraderData(
         Seq(EoriPeriod(eoriNumber, Some("2001-01-20T00:00:00Z"), None)),
-        Option(NotificationEmail(Option(emailAddress))))
-      when(mockEoriStore.getTraderData(any())).thenReturn(Future.successful(Option(traderData)) )
+        Option(NotificationEmail(Option(emailAddress),None)))
+      when(mockEoriStore.findByEori(any())).thenReturn(Future.successful(Option(traderData)) )
       val query = s"""{ "query": "query { findEmail( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
       val request = authorizedRequest.withBody(query)
       val result = contentAsString(controller.graphqlBody.apply(request))
@@ -94,6 +95,19 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
       result must include("data")
       result mustNot include("errors")
+    }
+
+    "Insert by Eori" in new GraphQLScenario() {
+      when(mockEoriStore.upsertByEori(any(),any())).thenReturn(Future.successful(true))
+      val query = s"""{"query" : "mutation {byEori(eoriHistory:{eori:\\"$testEori\\" validFrom:\\"$testValidFrom\\" validUntil:\\"$testValidUntil\\"}, notificationEmail: {address: \\"$testEmail\\", timestamp: \\"$testTimestamp\\"} )}" }"""
+      val request = authorizedRequest.withBody(query)
+      val result = contentAsString(controller.graphqlBody.apply(request))
+
+      result must include("data")
+      result mustNot include("errors")
+      val eoriPeriod = EoriPeriodInput(testEori, Some(testValidFrom), Some(testValidUntil))
+      val inputEmail = InputEmail(Some(testEmail), Some(testTimestamp))
+      verify(mockEoriStore).upsertByEori(eoriPeriod,Some(inputEmail))
     }
 
   }

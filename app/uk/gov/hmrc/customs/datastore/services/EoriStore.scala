@@ -24,6 +24,7 @@ import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.datastore.domain.TraderData._
 import uk.gov.hmrc.customs.datastore.domain._
+import uk.gov.hmrc.customs.datastore.graphql.{EoriPeriodInput, InputEmail}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -33,14 +34,17 @@ import scala.concurrent.Future
 @Singleton
 class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
   extends {
-    val FieldEori = "eori"
     val FieldEoriHistory = "eoriHistory"
+    val FieldEori = "eori"
+    val EoriSearchKey = s"$FieldEoriHistory.$FieldEori"
     val FieldEoriValidFrom = "validFrom"
     val FieldEoriValidUntil = "validUntil"
     val FieldEmails = "notificationEmail"
     val FieldEmailAddress = "address"
-    val EoriSearchKey = s"$FieldEoriHistory.$FieldEori"
-    val EmailSearchKey = s"$FieldEmails.$FieldEmailAddress"
+    val FieldTimestamp = "timestamp"
+    val EmailAddressSearchKey = s"$FieldEmails.$FieldEmailAddress"
+    val EmailTimestampSearchKey = s"$FieldEmails.$FieldTimestamp"
+
   }
     with ReactiveRepository[TraderData, BSONObjectID](
     collectionName = "dataStore",
@@ -61,12 +65,12 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     )
   }
 
-  def getTraderData(eori: String): Future[Option[TraderData]] = {
+  def findByEori(eori: String): Future[Option[TraderData]] = {
     find(EoriSearchKey -> eori).map(_.headOption)
   }
 
   def getEmail(eori: Eori): Future[Option[NotificationEmail]] = {
-    getTraderData(eori).map(traderData => traderData.flatMap(_.notificationEmail))
+    findByEori(eori).map(traderData => traderData.flatMap(_.notificationEmail))
   }
 
   def saveEmail(eori: Eori, email: NotificationEmail): Future[Any] = {
@@ -84,4 +88,27 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     Future.successful(true)
   }
 
+  def upsertByEori(eoriPeriod: EoriPeriodInput, email: Option[InputEmail]): Future[Boolean] = {
+    val updateEmailAddress = email.flatMap(_.address).map(address => (EmailAddressSearchKey -> toJsFieldJsValueWrapper(address)))
+    val updateEmailTimestamp = email.flatMap(_.timestamp).map(timestamp => (EmailTimestampSearchKey -> toJsFieldJsValueWrapper(timestamp)))
+    val updateEmailFields = Seq(updateEmailAddress, updateEmailTimestamp).flatten
+
+    val updateEoriValidFrom = eoriPeriod.validFrom.map(vFrom => (FieldEoriValidFrom -> toJsFieldJsValueWrapper(vFrom)))
+    val updateEoriValidUntil = eoriPeriod.validUntil.map(vUntil => (FieldEoriValidUntil -> toJsFieldJsValueWrapper(vUntil)))
+    val updateEori = Option(FieldEori -> toJsFieldJsValueWrapper(eoriPeriod.eori))
+    val updateHistoricEoriFields = Seq(updateEoriValidFrom, updateEoriValidUntil, updateEori).flatten
+    val historicEoriInnerJson = Json.obj(updateHistoricEoriFields: _*)
+    val eoriHistoryJson = FieldEoriHistory -> toJsFieldJsValueWrapper(Json.arr(toJsFieldJsValueWrapper(historicEoriInnerJson)))
+
+    val updateFields = Json.obj(updateEmailFields :+ eoriHistoryJson: _*)
+    val result = findAndUpdate(
+      query = Json.obj(EoriSearchKey -> eoriPeriod.eori),
+      update = Json.obj("$set" -> toJsFieldJsValueWrapper(updateFields)),
+      upsert = true
+    )
+    result.map(_.lastError.flatMap(_.err).isEmpty)
+
+  }
+
 }
+

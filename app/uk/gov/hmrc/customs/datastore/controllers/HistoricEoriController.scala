@@ -32,7 +32,7 @@ class HistoricEoriController @Inject()(val authConnector: CustomAuthConnector, e
 
   def getEoriHistory(eori: String): Action[AnyContent] = Action.async { implicit request =>
     authorised() {
-      eoriStore.getTraderData(eori).flatMap {
+      eoriStore.findByEori(eori).flatMap {
         case None =>
           etmp.getHistory(eori)
             .map { eoriPeriods =>

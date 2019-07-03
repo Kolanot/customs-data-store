@@ -36,6 +36,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
 
   val NotificationEmail = "notificationEmail"
   val Address = "address"
+  val FieldTimestamp = "timestamp"
   val EoriField = "eoriHistory"
 
   implicit val EoriHistoryType: ObjectType[Unit, EoriPeriod] = deriveObjectType[Unit, EoriPeriod](ObjectTypeName("EoriHistory"))
@@ -44,7 +45,10 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
 
   implicit val InputEmailType:InputObjectType[InputEmail] = deriveInputObjectType[InputEmail]()
   implicit val InputEmailUnmarshaller: FromInput[InputEmail] = inputUnmarshaller {
-    input => InputEmail(address = input.get(Address).flatMap(_.asInstanceOf[Option[EmailAddress]]))
+    input => InputEmail(
+      address = input.get(Address).flatMap(_.asInstanceOf[Option[EmailAddress]]),
+      timestamp = input.get(FieldTimestamp).flatMap(_.asInstanceOf[Option[Timestamp]])
+    )
   }
   implicit val InputEoriPeriodType:InputObjectType[EoriPeriodInput] = deriveInputObjectType[EoriPeriodInput]()
   implicit val InputEoriPeriodTypeUnmarshaller = inputUnmarshaller({
@@ -63,7 +67,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
       arguments = List(
         Argument("eori", StringType)
       ),
-      resolve = sangriaContext => eoriStore.getTraderData(sangriaContext.args.arg[String]("eori"))
+      resolve = sangriaContext => eoriStore.findByEori(sangriaContext.args.arg[String]("eori"))
     ),
     Field(
       name = "findEmail",
@@ -71,7 +75,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
       arguments = List(
         Argument("eori", StringType)
       ),
-      resolve = sangriaContext => eoriStore.getTraderData(sangriaContext.args.arg[String]("eori"))
+      resolve = sangriaContext => eoriStore.findByEori(sangriaContext.args.arg[String]("eori"))
     )
   )
 
@@ -92,6 +96,19 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
           sangriaContext.args.arg[String]("eori"),
           sangriaContext.args.arg[String]("notificationEmail")
         )
+    ),
+    Field(
+      name = "byEori",
+      fieldType = BooleanType,
+      arguments = List(
+        Argument(EoriField, InputEoriPeriodType),
+        Argument(NotificationEmail, OptionInputType(InputEmailType))
+      ),
+      resolve = ctx => {
+        val email = ctx.args.raw.get(NotificationEmail).flatMap(_.asInstanceOf[Option[InputEmail]])
+        val eori = ctx.args.raw(EoriField).asInstanceOf[EoriPeriodInput]
+        eoriStore.upsertByEori(eori,email)
+      }
     )
   )
 
