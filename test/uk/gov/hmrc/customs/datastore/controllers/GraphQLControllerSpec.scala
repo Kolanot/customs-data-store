@@ -17,7 +17,7 @@
 package uk.gov.hmrc.customs.datastore.controllers
 
 import org.mockito.ArgumentMatchers.{eq => is , _}
-import org.mockito.Mockito.{when,verify}
+import org.mockito.Mockito.{when,verify,never}
 import org.scalatest.Pending
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
@@ -109,6 +109,32 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val inputEmail = InputEmail(Some(testEmail), Some(testTimestamp))
       verify(mockEoriStore).upsertByEori(eoriPeriod,Some(inputEmail))
     }
+
+    "Insert an EORI with no email address" in new GraphQLScenario() {
+      when(mockEoriStore.upsertByEori(any(),any())).thenReturn(Future.successful(true))
+      val query = s"""{"query" : "mutation {byEori(eoriHistory:{eori:\\"$testEori\\" validFrom:\\"$testValidFrom\\" validUntil:\\"$testValidUntil\\"} )}" }"""
+      val request = authorizedRequest.withBody(query)
+      val result = contentAsString(controller.graphqlBody.apply(request))
+
+      result must include("data")
+      result mustNot include("errors")
+      val eoriPeriod = EoriPeriodInput(testEori, Some(testValidFrom), Some(testValidUntil))
+      verify(mockEoriStore).upsertByEori(eoriPeriod,None)
+    }
+
+    "Raise exception when calling no eori is provided" in new GraphQLScenario() {
+      when(mockEoriStore.upsertByEori(any(),any())).thenReturn(Future.successful(true))
+      val query = s"""{"query" : "mutation {byEori(notificationEmail: {address: \\"$testEmail\\", timestamp: \\"$testTimestamp\\"} )}" }"""
+      val request = authorizedRequest.withBody(query)
+      val result = contentAsString(controller.graphqlBody.apply(request))
+      println("#### " + result)
+      result must include("data")
+      result must include("errors")
+      result must include("not provided")
+      verify(mockEoriStore,never()).upsertByEori(any(),any())
+    }
+
+
 
   }
 
