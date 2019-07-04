@@ -62,7 +62,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
   "GraphQLController" should {
     "return unauthorised exception when auth token is not present" in new GraphQLScenario() {
       val eoriNumber:Eori = "GB12345678"
-      val query = s"""{ "query": "query { findEmail( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
+      val query = s"""{ "query": "query { byEori( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
       val unauthorizedRequest = FakeRequest(POST, "/graphql").withHeaders("Content-Type" -> "application/json").withBody(query)
       val respone = controller.graphqlBody.apply(unauthorizedRequest)
       status(respone) mustBe UNAUTHORIZED
@@ -75,7 +75,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
         Seq(EoriPeriod(eoriNumber, Some("2001-01-20T00:00:00Z"), None)),
         Option(NotificationEmail(Option(emailAddress),None)))
       when(mockEoriStore.findByEori(any())).thenReturn(Future.successful(Option(traderData)) )
-      val query = s"""{ "query": "query { findEmail( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
+      val query = s"""{ "query": "query { byEori( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
       val request = authorizedRequest.withBody(query)
       val result = contentAsString(controller.graphqlBody.apply(request))
       result must include("data")
@@ -127,7 +127,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val query = s"""{"query" : "mutation {byEori(notificationEmail: {address: \\"$testEmail\\", timestamp: \\"$testTimestamp\\"} )}" }"""
       val request = authorizedRequest.withBody(query)
       val result = contentAsString(controller.graphqlBody.apply(request))
-      println("#### " + result)
+
       result must include("data")
       result must include("errors")
       result must include("not provided")

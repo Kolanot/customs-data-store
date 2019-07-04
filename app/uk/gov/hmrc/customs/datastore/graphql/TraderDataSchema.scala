@@ -70,7 +70,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
       resolve = sangriaContext => eoriStore.findByEori(sangriaContext.args.arg[String]("eori"))
     ),
     Field(
-      name = "findEmail",
+      name = "byEori",
       fieldType = OptionType(TraderDataType),
       arguments = List(
         Argument("eori", StringType)
