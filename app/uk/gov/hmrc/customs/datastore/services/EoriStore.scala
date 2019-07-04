@@ -107,7 +107,6 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
       upsert = true
     )
     result.map(_.lastError.flatMap(_.err).isEmpty)
-
   }
 
 }

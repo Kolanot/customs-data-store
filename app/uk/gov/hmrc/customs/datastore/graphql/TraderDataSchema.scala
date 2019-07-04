@@ -21,7 +21,10 @@ import sangria.macros.derive._
 import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput, ResultMarshaller}
 import sangria.schema._
 import uk.gov.hmrc.customs.datastore.domain._
-import uk.gov.hmrc.customs.datastore.services.EoriStore
+import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
+import uk.gov.hmrc.http.HeaderCarrier
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 trait InputUnmarshallerGenerator {
 
@@ -32,7 +35,7 @@ trait InputUnmarshallerGenerator {
   }
 }
 @Singleton
-class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshallerGenerator{
+class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) extends InputUnmarshallerGenerator{
 
   val NotificationEmail = "notificationEmail"
   val Address = "address"
@@ -107,7 +110,14 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore) extends InputUnmarshaller
       resolve = ctx => {
         val email = ctx.args.raw.get(NotificationEmail).flatMap(_.asInstanceOf[Option[InputEmail]])
         val eori = ctx.args.raw(EoriField).asInstanceOf[EoriPeriodInput]
-        eoriStore.upsertByEori(eori,email)
+        implicit val hc = HeaderCarrier()
+        val eventualEoriHistory = etmp.getHistory(eori.eori)
+
+        for {
+          result <- eoriStore.upsertByEori(eori,email)
+          eoriHistory <- eventualEoriHistory
+          _ <- eoriStore.saveEoris(eoriHistory)
+        } yield result
       }
     )
   )
