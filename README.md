@@ -1,24 +1,34 @@
 
 # customs-data-store
 
-This repository is a permanent cache for customs related data.
-It supports graphql queries both for querying and updating.
+This repository contains the code for a persistent cache holding customs related data.
+It uses graphql queries for querying, updating and inserting.
 
 ### GraphQL examples
 
-For querying (SQL select):
+Example queries for retrieveing data (Select):
+
+Will return the values held in 'address' only for the given EORI.
 ```json
-{ "query": "query { byInternalId( internalId: \"1111111\")  { notificationEmail { address, isValidated }  } }"}
-{ "query": "query { byInternalId( internalId: \"1111111\") {internalId, eoriHistory {eori, validFrom,validUntil}, notificationEmail {address, isValidated}} }"}
-```
-For upserting (SQL insert and update):
-```json
-{"query" : "mutation {byInternalId(internalId:\"1111111\" notificationEmail:{isValidated:true} )}" }
-{"query" : "mutation {byInternalId(internalId:\"1111111\" notificationEmail:{address:\"some.guy@company.uk\" isValidated:false}  )}" }
-{"query" : "mutation {byInternalId(internalId:\"1111111\" eoriHistory:{eori:\"GB12345678\" validFrom:\"1987-03-20\" validUntil:\"1999-03-20\"}  notificationEmail:{address:\"rashmidth@rich-contractors.com\" isValidated:false}  )}" }
+{ "query": "query { byEori( eori: \"GB12345678\") { notificationEmail { address }  } }"}
 ```
 
+Will return the values held in 'address' and 'timestamp' for a given EORI.
+```json
+{ "query": "query { byEori( eori: \"GB12345678\") { notificationEmail { address, timestamp } } }"}
+```
 
+Example queries for upserting data (Insert/Update)
+
+Updating/Inserting the dates on an EORI or inserting it; without an email:
+```json
+{"query" : "mutation {byEori(eoriHistory:{eori:\"GB12345678\" validFrom:\"20180101\" validUntil:\"20200101\"} )}" }
+```
+
+Updating/Inserting an EORI with an email and timestamp:
+```json
+{"query" : "mutation {byEori(eoriHistory:{eori:\"EORI11223344\" validFrom:\"20180101\" validUntil:\"20200101\"}, notificationEmail: {address: \"rashmidth@rich-contractors.com\", timestamp: \"timestamp\"} )}" }
+```
 
 ### License
 

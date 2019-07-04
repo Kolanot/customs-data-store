@@ -16,9 +16,8 @@
 
 package uk.gov.hmrc.customs.datastore.controllers
 
-import org.mockito.ArgumentMatchers.{eq => is , _}
-import org.mockito.Mockito.{when,verify,never}
-import org.scalatest.Pending
+import org.mockito.ArgumentMatchers._
+import org.mockito.Mockito.{never, verify, when}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.words.MatcherWords
@@ -33,7 +32,6 @@ import uk.gov.hmrc.customs.datastore.graphql.{EoriPeriodInput, GraphQL, InputEma
 import uk.gov.hmrc.customs.datastore.services.{EoriStore, MongoSpecSupport, ServerTokenAuthorization}
 
 import scala.concurrent.Future
-
 
 class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with MockitoSugar with MatcherWords with ScalaFutures {
 
@@ -84,7 +82,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val maybeEmailAddress= Json.parse(result).as[JsObject] \\ "address"
       maybeEmailAddress.head mustBe JsString(emailAddress)
     }
-
+//TODO Do we need the test case below?
     "Insert new trader into our database" in new GraphQLScenario() {
       val eoriNumber:Eori = "GB12345678"
       val emailAddress = "abc@goodmail.com"
