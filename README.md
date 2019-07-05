@@ -4,7 +4,7 @@
 This repository contains the code for a persistent cache holding customs related data.
 It uses graphql queries for querying, updating and inserting.
 
-###Running and testing on localhost:  
+### Running and testing on localhost:  
 If you want to run it locally then you also have to run [customs-financials-hods-stub](https://github.com/hmrc/customs-financials-hods-stub) so that it can retrieve historic Eoris from there.  
 To start the service from sbt: `sbt "run 9893" ` or from service manager: `sm --start CUSTOMS_FINANCIALS_HODS_STUB -f`  
 In Postman
@@ -14,7 +14,7 @@ In Postman
 
 ### GraphQL examples
 
-#####Example queries for retrieveing data (Select):
+##### Example queries for retrieveing data (Select):
 
 Will return the values held in 'address' only for the given EORI.
 ```json
@@ -31,7 +31,7 @@ Will return the 'eori','validFrom','validUntil','address' and 'timestamp' for a 
 { "query": "query { byEori( eori: \"GB12345678\") {eoriHistory {eori validFrom validUntil},  notificationEmail { address, timestamp } } }"}
 ```
 
-#####Example queries for upserting data (Insert/Update)
+##### Example queries for upserting data (Insert/Update)
 
 Updating/Inserting the dates on an EORI or inserting it; without an email:
 ```json
