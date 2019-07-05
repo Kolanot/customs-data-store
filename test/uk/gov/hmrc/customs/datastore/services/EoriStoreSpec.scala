@@ -224,22 +224,22 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       } yield ())
     }
 
-    "upsert all fields " in {
-      val startingEoriPeriod = EoriPeriodInput(eori1, Some("date1"), Some("date2"))
-      val startingInputEmail = InputEmail(Some("original@email.uk"), Some("timestamp1"))
-      val startingExpected = TraderData(Seq(EoriPeriod(eori1, Some("date1"), Some("date2"))), Some(NotificationEmail(Some("original@email.uk"), Some("timestamp1"))))
+    "upsert the validFrom, validUntil, email and timestamp fields " in {
+      val eoriPeriod = EoriPeriodInput(eori1, Some("date1"), Some("date2"))
+      val inputEmail = InputEmail(Some("original@email.uk"), Some("timestamp1"))
+      val expectedTraderDataAfterInsert = TraderData(Seq(EoriPeriod(eori1, Some("date1"), Some("date2"))), Some(NotificationEmail(Some("original@email.uk"), Some("timestamp1"))))
 
       val updatedEoriPeriod = EoriPeriodInput(eori1, Some("date3"), Some("date4"))
       val updatedInputEmail = InputEmail(Some("updated@email.uk"), Some("timestamp2"))
-      val updatedExpected = TraderData(Seq(EoriPeriod(eori1, Some("date3"), Some("date4"))), Some(NotificationEmail(Some("updated@email.uk"), Some("timestamp2"))))
+      val expectedTraderDataAfterUpdate = TraderData(Seq(EoriPeriod(eori1, Some("date3"), Some("date4"))), Some(NotificationEmail(Some("updated@email.uk"), Some("timestamp2"))))
 
       await(for {
-        _ <- eoriStore.upsertByEori(startingEoriPeriod, Some(startingInputEmail))
-        r1 <- eoriStore.findByEori(eori1)
-        _ <- toFuture(r1.get mustBe startingExpected)
+        _ <- eoriStore.upsertByEori(eoriPeriod, Some(inputEmail))
+        insertedTraderData <- eoriStore.findByEori(eori1)
+        _ <- toFuture(insertedTraderData.get mustBe expectedTraderDataAfterInsert)
         _ <- eoriStore.upsertByEori(updatedEoriPeriod, Some(updatedInputEmail))
-        r2 <- eoriStore.findByEori(eori1)
-        _ <- toFuture(r2.get mustBe updatedExpected)
+        updatedTraderData <- eoriStore.findByEori(eori1)
+        _ <- toFuture(updatedTraderData.get mustBe expectedTraderDataAfterUpdate)
       } yield ())
     }
 
