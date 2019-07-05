@@ -29,7 +29,7 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
   val eoriHistoryUrl = mdg / getConfString("mdg.sub21","eorihistory")
   val authUrl = baseUrl("auth")
 
-  val serverToken = runModeConfiguration.getString("server-token").get
+  val serverToken = "Bearer " + runModeConfiguration.getString("server-token").get
 
 
   implicit class URLLike(left:String){

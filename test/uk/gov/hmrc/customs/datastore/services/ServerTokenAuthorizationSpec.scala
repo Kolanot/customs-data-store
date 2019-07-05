@@ -46,7 +46,7 @@ class ServerTokenAuthorizationSpec extends WordSpec with MustMatchers with Futur
     }
 
     "Accept valid Authorization token" in new ServerTokenAuthorizationScenario {
-      val req = FakeRequest().withHeaders("Authorization" -> "secret-token")
+      val req = FakeRequest().withHeaders("Authorization" -> "Bearer secret-token")
       val result = await(service.filter(req))
       result mustBe None
     }

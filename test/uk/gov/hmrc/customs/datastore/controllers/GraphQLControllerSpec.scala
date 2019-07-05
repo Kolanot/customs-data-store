@@ -63,7 +63,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
     val schema = new TraderDataSchema(mockEoriStore, historyService)
     val graphQL = new GraphQL(schema)
     val controller = new GraphQLController(authConnector, graphQL)
-    val authorizedRequest = FakeRequest(POST, "/graphql").withHeaders("Content-Type" -> "application/json", "Authorization" -> "secret-token")
+    val authorizedRequest = FakeRequest(POST, "/graphql").withHeaders("Content-Type" -> "application/json", "Authorization" -> "Bearer secret-token")
   }
 
   "GraphQLController" should {
@@ -172,7 +172,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val schema = new TraderDataSchema(eoriStore, historyService)
       val graphQL = new GraphQL(schema)
       val controller = new GraphQLController(authConnector, graphQL)
-      val authorizedRequest = FakeRequest(POST, "/graphql").withHeaders("Content-Type" -> "application/json", "Authorization" -> "secret-token")
+      val authorizedRequest = FakeRequest(POST, "/graphql").withHeaders("Content-Type" -> "application/json", "Authorization" -> "Bearer secret-token")
 
       val query = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { eoriHistory {eori validFrom validUntil},  notificationEmail { address, timestamp }  } }"}"""
       val mutation = s"""{"query" : "mutation {byEori(eoriHistory:{eori:\\"$testEori\\"}, notificationEmail: {address: \\"$testEmail\\", timestamp: \\"$testTimestamp\\"} )}" }"""
