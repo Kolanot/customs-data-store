@@ -80,8 +80,8 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val emailAddress = "abc@goodmail.com"
       val traderData = TraderData(
         Seq(EoriPeriod(eoriNumber, Some("2001-01-20T00:00:00Z"), None)),
-        Option(NotificationEmail(Option(emailAddress), None)))
-      when(mockEoriStore.findByEori(any())).thenReturn(Future.successful(Option(traderData)))
+        Some(NotificationEmail(Some(emailAddress), None)))
+      when(mockEoriStore.findByEori(any())).thenReturn(Future.successful(Some(traderData)))
       val query = s"""{ "query": "query { byEori( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
       val request = authorizedRequest.withBody(query)
       val result = contentAsString(controller.graphqlBody.apply(request))

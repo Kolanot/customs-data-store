@@ -100,7 +100,7 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     val historicEoriInnerJson = Json.obj(updateHistoricEoriFields: _*)
     val eoriHistoryJson = FieldEoriHistory -> toJsFieldJsValueWrapper(Json.arr(toJsFieldJsValueWrapper(historicEoriInnerJson)))
 
-    val updateFields = Json.obj(updateEmailFields :+ eoriHistoryJson: _*)
+    val updateFields = Json.obj(eoriHistoryJson +: updateEmailFields :_*)
     val result = findAndUpdate(
       query = Json.obj(EoriSearchKey -> eoriPeriod.eori),
       update = Json.obj("$set" -> toJsFieldJsValueWrapper(updateFields)),
