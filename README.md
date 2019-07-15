@@ -5,8 +5,8 @@ This repository contains the code for a persistent cache holding customs related
 It uses graphql queries for querying, updating and inserting.
 
 ### Running and testing on localhost:  
-If you want to run it locally then you also have to run [customs-data-store](https://github.com/hmrc/customs-data-store) so that it can retrieve historic Eoris from there.  
-To start the service from sbt: `sbt "run 9893" ` or from service manager: `sm --start CUSTOMS_DATA_STORE -f`  
+If you want to run [customs-data-store](https://github.com/hmrc/customs-data-store) locally then you also have to run [customs-financials-hods-stub](https://github.com/hmrc/customs-financials-hods-stub) so that it can retrieve historic Eoris from there.  
+To start the service from sbt: `sbt "run 9893" ` or from service manager: `sm --start CUSTOMS_DATA_STORE CUSTOMS_FINANCIALS_HODS_STUB -f`  
 In Postman
 1. Create a **POST** request to http://localhost:9893/customs-data-store/graphql
 2. Add and `Authorization` header and set it's value to whatever is in `application.conf  ` under the key `server-token`
