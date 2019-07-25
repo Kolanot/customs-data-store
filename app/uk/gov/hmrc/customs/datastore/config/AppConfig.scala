@@ -26,6 +26,7 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
   override protected def mode: Mode = environment.mode
 
   val mdg = baseUrl("mdg") /  getConfString("mdg.context","customs-financials-hods-stub")
+  val mdgEndpoint = baseUrl("mdg")
   val eoriHistoryUrl = mdg / getConfString("mdg.sub21","eorihistory")
   val authUrl = baseUrl("auth")
 
