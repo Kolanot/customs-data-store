@@ -43,7 +43,7 @@ class ETMPHistoryService @Inject()(appConfig:AppConfig, http: HttpClient) {
   def testSub21(eori: String)(implicit  hc:HeaderCarrier, reads: HttpReads[HttpResponse], ec: ExecutionContext):Future[JsValue] = {
 
     val hci: HeaderCarrier = hc.withExtraHeaders("Authorization" -> s"Bearer ${appConfig.bearerToken}")
-    val mdgUrl = s"{${appConfig.mdg}}/subscriptions/geteorihistory/v1"
+    val mdgUrl = s"{${appConfig.mdgEndpoint}}/subscriptions/geteorihistory/v1"
     Logger.info(s"This is a test MDG endpoint : $mdgUrl")
 
     Logger.info("MDG request headers: "+hc.headers)
