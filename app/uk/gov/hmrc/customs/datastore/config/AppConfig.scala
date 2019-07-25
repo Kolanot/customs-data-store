@@ -30,6 +30,7 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
   val authUrl = baseUrl("auth")
 
   val serverToken = "Bearer " + runModeConfiguration.getString("server-token").get
+  val bearerToken = "Bearer " + getConfString("mdg.bearer-token","secret-token")
 
 
   implicit class URLLike(left:String){

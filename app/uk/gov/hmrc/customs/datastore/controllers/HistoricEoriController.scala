@@ -46,4 +46,10 @@ class HistoricEoriController @Inject()(val authConnector: CustomAuthConnector, e
     }
   }
 
+  def mdgHistoricEori(eori: String) = Action.async { implicit req =>
+
+
+    etmp.testSub21(eori).map(a => Ok(a))
+  }
+
 }

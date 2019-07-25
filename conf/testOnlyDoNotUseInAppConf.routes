@@ -11,3 +11,4 @@
 
 # Add all the application routes to the prod.routes file
 ->         /                          prod.Routes
+GET       /testmdg/:eori             uk.gov.hmrc.customs.datastore.controllers.HistoricEoriController.mdgHistoricEori(eori)
