@@ -128,66 +128,6 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
 
     }
 
-    "save and retrieve email" in {
-      val email = NotificationEmail(Option("a.b@example.com"), None)
-      await(eoriStore.saveEmail(eori1, email))
-
-      val result = await(eoriStore.getEmail(eori1))
-      result mustBe Some(email)
-    }
-
-    "update email" in {
-      val email1 = NotificationEmail(Option("email1"), None)
-      val email1valid = NotificationEmail(Option("email1"), None)
-      val email2 = NotificationEmail(Option("email2"), None)
-      val email3 = NotificationEmail(Option("email3"), None)
-
-      def setupDB = await(eoriStore.insert(TraderData(Seq(period1, period2), Option(email1))))
-
-      def saveEmailAlreadyInDB = await(eoriStore.saveEmail(eori1, email1))
-
-      def saveEmail2ToEori2 = await(eoriStore.saveEmail(eori1, email2))
-
-      def saveEmail3ToEori2 = await(eoriStore.saveEmail(eori1, email3))
-
-      def updateEmailsValidation = await(eoriStore.saveEmail(eori1, email1valid))
-
-      def getEmailsWithEori1 = await(eoriStore.getEmail(period1.eori))
-
-      def getEmailsWithEori2 = await(eoriStore.getEmail(period2.eori))
-
-      setupDB
-      saveEmailAlreadyInDB
-      updateEmailsValidation
-
-      val result1 = getEmailsWithEori1
-      result1 mustBe Some(email1valid)
-
-      saveEmail2ToEori2
-      val result2 = getEmailsWithEori1
-      result2 mustBe Some(email2)
-
-      saveEmail3ToEori2
-      val result3 = getEmailsWithEori1
-      result3 mustBe Some(email3)
-    }
-  }
-
-  "update email with isValidated" in {
-    val email1 = NotificationEmail(Option("one@mail.com"), None)
-    val email2 = NotificationEmail(Option("one@mail.com"), None)
-    val email3 = NotificationEmail(Option("three@mail.com"), None)
-
-    await(for {
-      _ <- eoriStore.insert(TraderData(Seq(period1, period2), Option(email1)))
-      r1 <- eoriStore.getEmail(period1.eori)
-      _ <- toFuture(r1 mustBe Some(email1))
-      _ <- eoriStore.saveEmail(period1.eori, email2)
-      r2 <- eoriStore.getEmail(period1.eori)
-      _ <- toFuture(r2 mustBe Some(email2))
-    } yield {})
-  }
-
   "upsertByEori" should {
 
     "insert eori" in {
@@ -211,6 +151,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
         _ <- toFuture(r1.get mustBe expected)
       } yield ())
     }
+  }
 
     "insert eori with notification email and timestamp " in {
       val eoriPeriod = EoriPeriodInput(eori1, Some("date1"), Some("date2"))

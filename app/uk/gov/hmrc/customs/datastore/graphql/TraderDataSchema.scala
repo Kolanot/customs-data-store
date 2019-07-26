@@ -65,14 +65,6 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) 
 
   val Queries: List[Field[Unit, Unit]] = List(
     Field(
-      name = "trader",
-      fieldType = OptionType(TraderDataType),
-      arguments = List(
-        Argument("eori", StringType)
-      ),
-      resolve = sangriaContext => eoriStore.findByEori(sangriaContext.args.arg[String]("eori"))
-    ),
-    Field(
       name = "byEori",
       fieldType = OptionType(TraderDataType),
       arguments = List(
@@ -87,19 +79,6 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) 
     */
   val Mutations: List[Field[Unit, Unit]] = List(
     //Example: {"query" : "mutation {addTrader(eori:\"GB12345678\" notificationEmail:\"abc@goodmail.com\")}" }
-    Field(
-      name = "addTrader",
-      fieldType = BooleanType,
-      arguments = List(
-        Argument("eori", StringType),
-        Argument("notificationEmail", StringType)
-      ),
-      resolve = sangriaContext =>
-        eoriStore.rosmInsert(
-          sangriaContext.args.arg[String]("eori"),
-          sangriaContext.args.arg[String]("notificationEmail")
-        )
-    ),
     Field(
       name = "byEori",
       fieldType = BooleanType,

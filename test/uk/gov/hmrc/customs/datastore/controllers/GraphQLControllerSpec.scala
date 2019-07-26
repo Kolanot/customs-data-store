@@ -20,7 +20,6 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.mockito.ArgumentMatchers.{eq => is, _}
 import org.mockito.Mockito.{never, verify, when}
-import org.scalatest.Pending
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.words.MatcherWords
@@ -90,18 +89,6 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
       val maybeEmailAddress = Json.parse(result).as[JsObject] \\ "address"
       maybeEmailAddress.head mustBe JsString(emailAddress)
-    }
-
-    "Insert new trader into our database" in new GraphQLScenario() {
-      val eoriNumber: Eori = "GB12345678"
-      val emailAddress = "abc@goodmail.com"
-      when(mockEoriStore.rosmInsert(any(), any())).thenReturn(Future.successful(true))
-      val query = s"""{"query" : "mutation {addTrader(eori:\\"$eoriNumber\\" notificationEmail:\\"$emailAddress\\")}" }"""
-      val request = authorizedRequest.withBody(query)
-      val result = contentAsString(controller.graphqlBody.apply(request))
-
-      result must include("data")
-      result mustNot include("errors")
     }
 
     "Insert by Eori" in new GraphQLScenario() {

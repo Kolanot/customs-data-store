@@ -18,14 +18,14 @@ package uk.gov.hmrc.customs.datastore.controllers
 
 import com.google.inject.{Inject, Singleton}
 import play.api.Logger
-import uk.gov.hmrc.customs.datastore.graphql.GraphQL
+import play.api.libs.json
 import play.api.libs.json._
 import play.api.mvc._
 import sangria.ast.Document
 import sangria.execution._
 import sangria.marshalling.playJson._
 import sangria.parser.QueryParser
-import uk.gov.hmrc.auth.core.AuthorisedFunctions
+import uk.gov.hmrc.customs.datastore.graphql.GraphQL
 import uk.gov.hmrc.customs.datastore.services.ServerTokenAuthorization
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
@@ -44,16 +44,6 @@ import scala.util.{Failure, Success, Try}
 class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, graphQL: GraphQL)
                                  (implicit val executionContext: ExecutionContext) extends BaseController {
 Logger.warn("GraphQLController started ")
-
-
-  def connectivityGet() = Action { implicit request =>
-    Logger.warn(s"parsing GET request: ${request}")
-    Ok("GET Request OK")
-  }
-  def connectivityPost() = Action { implicit request =>
-    Logger.warn(s"parsing POST request: ${request}")
-    Ok("POST Request OK")
-  }
 
   /**
     * Parses graphql body of incoming request.
@@ -90,7 +80,11 @@ Logger.warn("GraphQLController started ")
         maybeQuery match {
           case Success((query, operationName, variables)) => executeQuery(query, variables, operationName)
           case Failure(error) => Future.successful {
-            Logger.error(s"graphql query parsing error: ${error.getMessage}"); BadRequest(error.getMessage)
+            Logger.error(s"graphql query parsing error: ${error.getMessage}")
+            BadRequest(json.JsObject(Map(
+              "ErrorMessage" ->  JsString(error.getMessage),
+              "Stack" -> JsString(error.getStackTrace.mkString(" "))))
+            )
           }
         }
   }

@@ -69,25 +69,6 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     find(EoriSearchKey -> eori).map(_.headOption)
   }
 
-  def getEmail(eori: Eori): Future[Option[NotificationEmail]] = {
-    findByEori(eori).map(traderData => traderData.flatMap(_.notificationEmail))
-  }
-
-  def saveEmail(eori: Eori, email: NotificationEmail): Future[Any] = {
-    findAndUpdate(
-      query = Json.obj(EoriSearchKey -> eori),
-      update = Json.obj(
-        "$setOnInsert" -> Json.obj(FieldEoriHistory -> Json.arr(Json.obj(FieldEori -> eori))),
-        "$set" -> Json.obj(FieldEmails -> email)),
-      upsert = true
-    )
-  }
-
-  def rosmInsert(eori: Eori, email: String): Future[Boolean] = {
-    //TODO: When someone registered for a new Eori, they will call this endpoint to save the data
-    Future.successful(true)
-  }
-
   def upsertByEori(eoriPeriod: EoriPeriodInput, email: Option[InputEmail]): Future[Boolean] = {
     val updateEmailAddress = email.flatMap(_.address).map(address => (EmailAddressSearchKey -> toJsFieldJsValueWrapper(address)))
     val updateEmailTimestamp = email.flatMap(_.timestamp).map(timestamp => (EmailTimestampSearchKey -> toJsFieldJsValueWrapper(timestamp)))

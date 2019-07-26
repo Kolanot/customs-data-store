@@ -17,38 +17,17 @@
 package uk.gov.hmrc.customs.datastore.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.libs.json.Json
 import play.api.mvc._
 import uk.gov.hmrc.auth.core.AuthorisedFunctions
-import uk.gov.hmrc.customs.datastore.domain.TraderData
-import uk.gov.hmrc.customs.datastore.domain.TraderData._
 import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 @Singleton()
 class HistoricEoriController @Inject()(val authConnector: CustomAuthConnector, eoriStore: EoriStore, etmp: ETMPHistoryService)(implicit ec: ExecutionContext) extends BaseController with AuthorisedFunctions {
 
-  def getEoriHistory(eori: String): Action[AnyContent] = Action.async { implicit request =>
-    authorised() {
-      eoriStore.findByEori(eori).flatMap {
-        case None =>
-          etmp.getHistory(eori)
-            .map { eoriPeriods =>
-              eoriStore.insert(TraderData(eoriPeriods, None))
-              eoriPeriods
-            }
-        case Some(traderData) =>
-          Future.successful(traderData.eoriHistory)
-      }
-        .map(history => Ok(Json.toJson(history)))
-    }
-  }
-
   def mdgHistoricEori(eori: String) = Action.async { implicit req =>
-
-
     etmp.testSub21(eori).map(a => Ok(a))
   }
 
