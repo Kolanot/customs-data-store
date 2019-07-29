@@ -91,6 +91,34 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       maybeEmailAddress.head mustBe JsString(emailAddress)
     }
 
+    "Load Eori history from MDG" in new GraphQLScenario() {
+      pending
+      val eoriNumber: Eori = "GB12345678"
+      val emailAddress = "abc@goodmail.com"
+      val traderData = TraderData(
+        Seq(EoriPeriod(eoriNumber, None, None)),
+        Some(NotificationEmail(Some(emailAddress), None)))
+//      when(mockEoriStore.findByEori(any())).(Future.successful(Some(traderData)))
+      when(mockEoriStore.saveEoris(any())).thenReturn(Future.successful(true))
+
+      val historicEoris = Seq(
+        EoriPeriod(testEori, Some("2010-01-20T00:00:00Z"), None),
+        EoriPeriod("GB222222", Some("2002-01-20T00:00:00Z"), Some("2001-01-20T00:00:00Z")),
+        EoriPeriod("GB111111", Some("2001-01-20T00:00:00Z"), Some("1999-01-20T00:00:00Z"))
+      )
+      when(historyService.getHistory(is(eoriNumber))(any())).thenReturn(Future.successful(historicEoris))
+
+      val query = s"""{ "query": "query { byEori( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
+      val request = authorizedRequest.withBody(query)
+      val result = contentAsString(controller.graphqlBody.apply(request))
+      result must include("data")
+      result mustNot include("errors")
+
+      val maybeEmailAddress = Json.parse(result).as[JsObject] \\ "address"
+      maybeEmailAddress.head mustBe JsString(emailAddress)
+    }
+
+
     "Insert by Eori" in new GraphQLScenario() {
       when(mockEoriStore.upsertByEori(any(), any())).thenReturn(Future.successful(true))
       when(mockEoriStore.saveEoris(any())).thenReturn(Future.successful(true))

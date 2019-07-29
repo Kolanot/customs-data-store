@@ -32,10 +32,10 @@ import scala.concurrent.{ExecutionContext, Future}
 class ETMPHistoryService @Inject()(appConfig:AppConfig, http: HttpClient) {
 
   def getHistory(eori: Eori)(implicit hc: HeaderCarrier): Future[Seq[EoriPeriod]] = {
-    http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}/$eori")
+    http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}$eori")
       .map { response =>
         response.getEORIHistoryResponse.responseDetail.EORIHistory.map {
-          history => EoriPeriod(history.EORI, history.validFrom, history.validUntil)
+          history => EoriPeriod(history.EORI, history.validFrom, history.validTo)
         }
       }
   }
@@ -43,7 +43,7 @@ class ETMPHistoryService @Inject()(appConfig:AppConfig, http: HttpClient) {
   def testSub21(eori: String)(implicit  hc:HeaderCarrier, reads: HttpReads[HttpResponse], ec: ExecutionContext):Future[JsValue] = {
 
     val hci: HeaderCarrier = hc.withExtraHeaders("Authorization" -> s"Bearer ${appConfig.bearerToken}")
-    val mdgUrl = s"${appConfig.mdgEndpoint}/subscriptions/geteorihistory/v1"
+    val mdgUrl =appConfig.eoriHistoryUrl    ///subscriptions/geteorihistory/v1"
     Logger.info(s"This is a test MDG endpoint : $mdgUrl")
 
     Logger.info("MDG request headers: "+hc.headers)

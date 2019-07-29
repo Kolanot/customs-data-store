@@ -12,3 +12,6 @@
 # Add all the application routes to the prod.routes file
 ->         /                          prod.Routes
 GET       /testmdg/:eori             uk.gov.hmrc.customs.datastore.controllers.HistoricEoriController.mdgHistoricEori(eori)
+
+GET        /customs-data-store/test-only/feature/:featureName/enable  @uk.gov.hmrc.customs.datastore.testOnly.controllers.FeatureSwitchController.enable(featureName)
+GET        /customs-data-store/test-only/feature/:featureName/disable @uk.gov.hmrc.customs.datastore.testOnly.controllers.FeatureSwitchController.disable(featureName)
