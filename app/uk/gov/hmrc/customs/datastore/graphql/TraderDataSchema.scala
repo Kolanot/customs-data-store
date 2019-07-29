@@ -17,6 +17,7 @@
 package uk.gov.hmrc.customs.datastore.graphql
 
 import javax.inject.{Inject, Singleton}
+import play.api.Logger
 import sangria.macros.derive._
 import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput, ResultMarshaller}
 import sangria.schema._
@@ -25,6 +26,7 @@ import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 trait InputUnmarshallerGenerator {
 
@@ -78,10 +80,13 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) 
         val mustRequestHistoricEori = eventualTradarData.map( a => a.map(b => b.eoriHistory.headOption.find( c => c.validFrom.isEmpty && c.validUntil.isEmpty).isDefined ).getOrElse(true))
 
         mustRequestHistoricEori.flatMap { mustRequest =>
+          Logger.info(s"must Request history : $mustRequest for eori: $eori")
+          eventualTradarData.foreach(a => Logger.info("OriginalTraderData: " + a))
           mustRequest match {
             case true =>
               for {
                 eoriHistory <- etmp.getHistory(eori)
+                _ <- Future.successful(Logger.info("EoriHistory: " + eoriHistory))
                 _ <- eoriStore.saveEoris(eoriHistory)
                 traderData <- eoriStore.findByEori(eori)
               } yield traderData  //eoriStore.findByEori(eori)
