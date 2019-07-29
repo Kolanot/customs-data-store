@@ -32,7 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class ETMPHistoryService @Inject()(appConfig:AppConfig, http: HttpClient) {
 
   def getHistory(eori: Eori)(implicit hc: HeaderCarrier): Future[Seq[EoriPeriod]] = {
-    http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}/$eori")
+    http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}$eori")
       .map { response =>
         response.getEORIHistoryResponse.responseDetail.EORIHistory.map {
           history => EoriPeriod(history.EORI, history.validFrom, history.validTo)

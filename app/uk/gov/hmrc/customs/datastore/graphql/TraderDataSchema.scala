@@ -25,7 +25,6 @@ import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 trait InputUnmarshallerGenerator {
 
@@ -76,7 +75,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) 
         val eori = sangriaContext.args.arg[String]("eori")
         val eventualTradarData = eoriStore.findByEori(eori)
 
-        val mustRequestHistoricEori = eventualTradarData.map( a => a.map(b => b.eoriHistory.headOption.find( c => c.validFrom.isEmpty && c.validUntil.isEmpty).isDefined ).getOrElse(false))
+        val mustRequestHistoricEori = eventualTradarData.map( a => a.map(b => b.eoriHistory.headOption.find( c => c.validFrom.isEmpty && c.validUntil.isEmpty).isDefined ).getOrElse(true))
 
         mustRequestHistoricEori.flatMap { mustRequest =>
           mustRequest match {

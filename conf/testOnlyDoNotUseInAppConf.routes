@@ -13,5 +13,5 @@
 ->         /                          prod.Routes
 GET       /testmdg/:eori             uk.gov.hmrc.customs.datastore.controllers.HistoricEoriController.mdgHistoricEori(eori)
 
-GET        /data-store/test-only/feature/:featureName/enable  @uk.gov.hmrc.customs.datastore.testOnly.controllers.FeatureSwitchController.enable(featureName)
-GET        /data-store/test-only/feature/:featureName/disable @uk.gov.hmrc.customs.datastore.testOnly.controllers.FeatureSwitchController.disable(featureName)
+GET        /customs-data-store/test-only/feature/:featureName/enable  @uk.gov.hmrc.customs.datastore.testOnly.controllers.FeatureSwitchController.enable(featureName)
+GET        /customs-data-store/test-only/feature/:featureName/disable @uk.gov.hmrc.customs.datastore.testOnly.controllers.FeatureSwitchController.disable(featureName)
