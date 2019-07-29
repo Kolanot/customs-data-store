@@ -26,22 +26,15 @@ import uk.gov.hmrc.play.config.ServicesConfig
 class AppConfig @Inject()(val runModeConfiguration: Configuration, val environment: Environment) extends ServicesConfig {
   override protected def mode: Mode = environment.mode
 
-  //val mdg = baseUrl("mdg") /  getConfString("mdg.context","customs-financials-hods-stub")
-  //val mdgEndpoint = baseUrl("actualmdg") + getConfString("actualmdg.context", "/")
-  //val eoriHistoryUrl = mdg / getConfString("mdg.eoriHistory","eorihistory")
   val authUrl = baseUrl("auth")
 
   val serverToken = "Bearer " + runModeConfiguration.getString("server-token").get
   val bearerToken = "Bearer " + getConfString("actualmdg.bearer-token","secret-token")
 
-  def mdgApi:String = {
-    if(FeatureSwitch.ActualMdg.isEnabled()) {
-      baseUrl("actualmdg")
-    } else {
-      baseUrl("mdg") + getConfString("mdg.context", "customs-financials-hods-stub")
-    }
+  def eoriHistoryUrl:String = FeatureSwitch.ActualMdg.isEnabled() match {
+    case true => baseUrl("actualmdg") / getConfString("actualmdg.historicEoriEndpoint", "config-error")
+    case false => baseUrl("mdg")  / getConfString("mdg.historicEoriEndpoint", "config-error")
   }
-
 
   implicit class URLLike(left:String){
     def /(right:String):String = checkEnding(left) + "/" + checkBeginning(right)
