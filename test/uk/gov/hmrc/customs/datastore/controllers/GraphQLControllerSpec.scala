@@ -52,7 +52,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
     val historyService = mock[ETMPHistoryService]
-    when(historyService.getHistory(is(testEori))(any())).thenReturn(Future.successful(Seq(EoriPeriod(testEori, Some("1987.03.20"), None))))
+    when(historyService.getHistory(is(testEori))(any(), any())).thenReturn(Future.successful(Seq(EoriPeriod(testEori, Some("1987.03.20"), None))))
     val mockEoriStore = mock[EoriStore]
     val env = Environment.simple()
     val configuration = Configuration.load(env)
@@ -106,7 +106,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
         EoriPeriod("GB222222", Some("2002-01-20T00:00:00Z"), Some("2001-01-20T00:00:00Z")),
         EoriPeriod("GB111111", Some("2001-01-20T00:00:00Z"), Some("1999-01-20T00:00:00Z"))
       )
-      when(historyService.getHistory(is(eoriNumber))(any())).thenReturn(Future.successful(historicEoris))
+      when(historyService.getHistory(is(eoriNumber))(any(), any())).thenReturn(Future.successful(historicEoris))
 
       val query = s"""{ "query": "query { byEori( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
       val request = authorizedRequest.withBody(query)
@@ -177,7 +177,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
         EoriPeriod("GB222222", Some("2002-01-20T00:00:00Z"), Some("2001-01-20T00:00:00Z")),
         EoriPeriod("GB111111", Some("2001-01-20T00:00:00Z"), Some("1999-01-20T00:00:00Z"))
       )
-      when(historyService.getHistory(is(testEori))(any())).thenReturn(Future.successful(historicEoris))
+      when(historyService.getHistory(is(testEori))(any(), any())).thenReturn(Future.successful(historicEoris))
 
       val env = Environment.simple()
       val configuration = Configuration.load(env)
