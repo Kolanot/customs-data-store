@@ -35,7 +35,7 @@ class ETMPHistoryService @Inject()(appConfig:AppConfig, http: HttpClient) {
     http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}/$eori")
       .map { response =>
         response.getEORIHistoryResponse.responseDetail.EORIHistory.map {
-          history => EoriPeriod(history.EORI, history.validFrom, history.validUntil)
+          history => EoriPeriod(history.EORI, history.validFrom, history.validTo)
         }
       }
   }

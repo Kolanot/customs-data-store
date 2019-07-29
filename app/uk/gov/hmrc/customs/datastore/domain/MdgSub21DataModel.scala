@@ -34,7 +34,7 @@ case class ResponseDetail(EORIHistory: Seq[EORIHistory])
 
 case class EORIHistory(EORI: Eori,
                        validFrom: Option[String],
-                       validUntil: Option[String])
+                       validTo: Option[String])
 
 object HistoricEoriResponse {
   implicit val eoriHistoryFormat = Json.format[EORIHistory]

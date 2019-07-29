@@ -22,6 +22,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, MustMatchers}
+import play.api.libs.json.{JsObject, Json}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
@@ -77,6 +78,47 @@ class ETMPHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
 
     val  response = await(service.getHistory(EORI1))
     response mustBe List(EoriPeriod(EORI1,Some("1985-03-20T19:30:51Z"),None))
+  }
+
+  "The historic eori MDG response" should "return a single eori history entries" in new ETMPScenario {
+    val EORI1 = "GB553011111009"
+    val jsonResponse = s"""{
+                         |  "getEORIHistoryResponse": {
+                         |    "responseCommon": {
+                         |      "status": "OK",
+                         |      "processingDate": "2019-07-26T10:21:13Z"
+                         |    },
+                         |    "responseDetail": {
+                         |      "EORIHistory": [
+                         |        {
+                         |          "EORI": "$EORI1",
+                         |          "validFrom": "2019-07-24"
+                         |        },
+                         |        {
+                         |          "EORI": "GB550011111009",
+                         |          "validFrom": "2009-05-16",
+                         |          "validTo": "2019-07-23"
+                         |        },
+                         |        {
+                         |          "EORI": "GB551011111009",
+                         |          "validFrom": "2019-07-24",
+                         |          "validTo": "2019-07-23"
+                         |        },
+                         |        {
+                         |          "EORI": "GB552011111009",
+                         |          "validFrom": "2019-07-24",
+                         |          "validTo": "2019-07-23"
+                         |        }
+                         |      ]
+                         |    }
+                         |  }
+                         |}""".stripMargin
+    when(mockHttp.GET[HistoricEoriResponse](any())(any(),any(),any()))
+      .thenReturn(Future.successful(Json.fromJson[HistoricEoriResponse](Json.parse(jsonResponse).as[JsObject]).get))
+
+    val  response = await(service.getHistory(EORI1))
+    println(response)
+    response(3) mustBe EoriPeriod("GB552011111009",Some("2019-07-24"),Some("2019-07-23"))
   }
 
 

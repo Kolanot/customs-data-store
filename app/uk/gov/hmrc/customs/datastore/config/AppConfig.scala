@@ -19,19 +19,28 @@ package uk.gov.hmrc.customs.datastore.config
 import javax.inject.{Inject, Singleton}
 import play.api.Mode.Mode
 import play.api.{Configuration, Environment}
+import uk.gov.hmrc.customs.datastore.services.FeatureSwitch
 import uk.gov.hmrc.play.config.ServicesConfig
 
 @Singleton
 class AppConfig @Inject()(val runModeConfiguration: Configuration, val environment: Environment) extends ServicesConfig {
   override protected def mode: Mode = environment.mode
 
-  val mdg = baseUrl("mdg") /  getConfString("mdg.context","customs-financials-hods-stub")
-  val mdgEndpoint = baseUrl("actualmdg") + getConfString("actualmdg.context", "/")
-  val eoriHistoryUrl = mdg / getConfString("mdg.sub21","eorihistory")
+  //val mdg = baseUrl("mdg") /  getConfString("mdg.context","customs-financials-hods-stub")
+  //val mdgEndpoint = baseUrl("actualmdg") + getConfString("actualmdg.context", "/")
+  //val eoriHistoryUrl = mdg / getConfString("mdg.eoriHistory","eorihistory")
   val authUrl = baseUrl("auth")
 
   val serverToken = "Bearer " + runModeConfiguration.getString("server-token").get
   val bearerToken = "Bearer " + getConfString("actualmdg.bearer-token","secret-token")
+
+  def mdgApi:String = {
+    if(FeatureSwitch.ActualMdg.isEnabled()) {
+      baseUrl("actualmdg")
+    } else {
+      baseUrl("mdg") + getConfString("mdg.context", "customs-financials-hods-stub")
+    }
+  }
 
 
   implicit class URLLike(left:String){
