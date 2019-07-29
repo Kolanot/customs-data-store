@@ -77,19 +77,19 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) 
         val eori = sangriaContext.args.arg[String]("eori")
         val eventualTradarData = eoriStore.findByEori(eori)
 
-        val mustRequestHistoricEori = eventualTradarData.map( a => a.map(b => b.eoriHistory.headOption.find( c => c.validFrom.isEmpty && c.validUntil.isEmpty).isDefined ).getOrElse(true))
-
-        mustRequestHistoricEori.flatMap { mustRequest =>
-          Logger.info(s"must Request history : $mustRequest for eori: $eori")
+        val isHisricEoriLoaded = eventualTradarData.map( a => a.map(b => b.eoriHistory.headOption.find( c => c.validFrom.isEmpty && c.validUntil.isEmpty).isDefined ).getOrElse(true))
+        val isHistoricEoriQueried = sangriaContext.astFields.flatMap(_.selections).map(_.renderPretty).find(_.contains("eoriHistory")).isDefined
+        isHisricEoriLoaded.flatMap { mustRequest =>
+          Logger.info(s"eori: $eori, isHisricEoriLoaded : $mustRequest , isHistoricEoriQueried: $isHistoricEoriQueried")
           eventualTradarData.foreach(a => Logger.info("OriginalTraderData: " + a))
-          mustRequest match {
+          (mustRequest && isHistoricEoriQueried) match {
             case true =>
               for {
                 eoriHistory <- etmp.getHistory(eori)
                 _ <- Future.successful(Logger.info("EoriHistory: " + eoriHistory))
                 _ <- eoriStore.saveEoris(eoriHistory)
                 traderData <- eoriStore.findByEori(eori)
-              } yield traderData  //eoriStore.findByEori(eori)
+              } yield traderData
             case false =>
               eventualTradarData
           }
