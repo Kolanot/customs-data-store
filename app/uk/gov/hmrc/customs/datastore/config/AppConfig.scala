@@ -44,21 +44,6 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
     def checkBeginning(in:String):String = if (in.indexOf("/") == 0) in.drop(1) else in
   }
 
-  val getMongoIPs = {
-    val mongoString = runModeConfiguration.getString("mongodb.uri").getOrElse("")
-    val regex = "mongodb://(.*)/.*".r
-    val mongos = regex.findFirstMatchIn(mongoString) match {
-      case Some(i) => i.group(1).split(",").toList.map(a => a.substring(0,if (a.indexOf(":") > 0) a.indexOf(":") else a.length  ))
-      case None => Nil
-    }
-    Logger.info("Mongos: " + mongos)
-    mongos.foreach{hostName =>
-      val address = InetAddress.getByName(hostName)
-      Logger.info(s"$hostName --> ${address.getHostAddress}")
-    }
-    mongos
-  }
-
 }
 
 
