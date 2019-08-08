@@ -50,7 +50,7 @@ Logger.warn("GraphQLController started ")
     *
     * @return an 'Action' to handles a request and generates a result to be sent to the client
     */
-  def graphqlBody(): Action[String] = serverAuth.async(parse.tolerantText) {
+  def graphqlBody(): Action[String] = Action.async(parse.tolerantText) {
     implicit request: Request[String] =>
 
       Logger.warn("Grapql Request: " + request)
