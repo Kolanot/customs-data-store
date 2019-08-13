@@ -21,18 +21,18 @@ import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain.{Eori, EoriPeriod, HistoricEoriResponse}
+import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-//Call MDG to retrieve the latest historic Eori's for a given Eori from ETMP
 class ETMPHistoryService @Inject()(appConfig:AppConfig, http: HttpClient) {
 
   def getHistory(eori: Eori)(implicit hc: HeaderCarrier, reads: HttpReads[HistoricEoriResponse]): Future[Seq[EoriPeriod]] = {
-    val hci: HeaderCarrier = hc.withExtraHeaders("Authorization" -> s"Bearer ${appConfig.bearerToken}")
-    http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}$eori")(reads, hci, implicitly[ExecutionContext])
+    val hci: HeaderCarrier = hc.copy(authorization = Some(Authorization(s"Bearer ${appConfig.bearerToken}")))
+    http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}$eori")(reads, hci, implicitly)
       .map { response =>
         response.getEORIHistoryResponse.responseDetail.EORIHistory.map {
           history => EoriPeriod(history.EORI, history.validFrom, history.validTo)
@@ -42,13 +42,11 @@ class ETMPHistoryService @Inject()(appConfig:AppConfig, http: HttpClient) {
 
   def testSub21(eori: String)(implicit  hc:HeaderCarrier, reads: HttpReads[HttpResponse], ec: ExecutionContext):Future[JsValue] = {
 
-//    val hci: HeaderCarrier = hc.withExtraHeaders("Authorization" -> s"Bearer ${appConfig.bearerToken}")
     val hci: HeaderCarrier = hc
     val mdgUrl =appConfig.eoriHistoryUrl + eori
     Logger.info(s"This is a test MDG endpoint : $mdgUrl")
 
     Logger.info("MDG request headers: "+hci.headers)
-    //val reads = Json.reads[JsObject]
     http.GET[HttpResponse](mdgUrl)(reads, hci, ec).map(a => Json.parse(a.body))
 
   }
