@@ -43,18 +43,16 @@ import scala.util.{Failure, Success, Try}
 @Singleton
 class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, graphQL: GraphQL)
                                  (implicit val executionContext: ExecutionContext) extends BaseController {
-Logger.warn("GraphQLController started ")
 
   /**
     * Parses graphql body of incoming request.
     *
     * @return an 'Action' to handles a request and generates a result to be sent to the client
     */
-  def graphqlBody(): Action[String] = Action.async(parse.tolerantText) {
-    implicit request: Request[String] =>
+  def graphqlBody(): Action[JsValue] = serverAuth.async(parse.json) {
+    implicit request: Request[JsValue] =>
 
-      Logger.warn("Grapql Request: " + request)
-      Logger.warn(s"Grapql Request body: ${request.body}")
+      Logger.info("GraphQL Request: " + request)
 
         val extract: JsValue => (String, Option[String], Option[JsObject]) = query => (
           (query \ "query").as[String],
@@ -67,12 +65,12 @@ Logger.warn("GraphQLController started ")
         )
 
         val maybeQuery: Try[(String, Option[String], Option[JsObject])] = Try {
-          Json.parse(request.body) match {
+          request.body match {
             case arrayBody@JsArray(_) => extract(arrayBody.value(0))
             case objectBody@JsObject(_) => extract(objectBody)
             case otherType =>
               throw new Error {
-                s"/graphql endpoint does not support request body of type [${otherType.getClass.getSimpleName}]"
+                s"/graphQL endpoint does not support request body of type [${otherType.getClass.getSimpleName}]"
               }
           }
         }
@@ -80,7 +78,7 @@ Logger.warn("GraphQLController started ")
         maybeQuery match {
           case Success((query, operationName, variables)) => executeQuery(query, variables, operationName)
           case Failure(error) => Future.successful {
-            Logger.error(s"graphql query parsing error: ${error.getMessage}")
+            Logger.error(s"graphQL query parsing error: ${error.getMessage}")
             BadRequest(json.JsObject(Map(
               "ErrorMessage" ->  JsString(error.getMessage),
               "Stack" -> JsString(error.getStackTrace.mkString(" "))))
