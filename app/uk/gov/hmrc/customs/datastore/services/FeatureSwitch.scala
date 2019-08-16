@@ -25,6 +25,7 @@ object FeatureSwitch {
   def forName(name: String): FeatureName = {
     name match {
       case ActualMdg.name => ActualMdg
+      case MdgRequest.name => MdgRequest
     }
   }
 
@@ -72,5 +73,7 @@ object FeatureSwitch {
   }
 
   case object ActualMdg extends {val name = "actual-mdg"} with FeatureName  //This is to switch between sdes stub and real sdes on QA
+
+  case object MdgRequest extends {val name = "mdg-request"} with FeatureName  //This is to switch between sdes stub and real sdes on QA
 
 }

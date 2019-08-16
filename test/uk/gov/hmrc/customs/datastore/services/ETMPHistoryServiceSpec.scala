@@ -121,6 +121,13 @@ class ETMPHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
     response(3) mustBe EoriPeriod("GB552011111009",Some("2019-07-24"),Some("2019-07-23"))
   }
 
+  "The historic eori service" should "return empty list when feature mdg-request is disabled" in new ETMPScenario {
+    FeatureSwitch.MdgRequest.disable()
+    val EORI1 = "GB0000000001"
+    when(mockHttp.GET[HistoricEoriResponse](any())(any(),any(),any())).thenReturn(Future.successful(generateResponse(List(EORI1))))
 
+    val  response = await(service.getHistory(EORI1))
+    response mustBe List()
+  }
 
 }

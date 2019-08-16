@@ -17,8 +17,8 @@
 package uk.gov.hmrc.customs.datastore.services
 
 import javax.inject.Inject
-import play.api.{Logger, LoggerLike}
 import play.api.libs.json.{JsValue, Json}
+import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain.{Eori, EoriPeriod, HistoricEoriResponse}
 import uk.gov.hmrc.http.logging.Authorization
@@ -33,13 +33,17 @@ class ETMPHistoryService @Inject()(appConfig: AppConfig, http: HttpClient) {
   val log: LoggerLike = Logger(this.getClass)
 
   def getHistory(eori: Eori)(implicit hc: HeaderCarrier, reads: HttpReads[HistoricEoriResponse]): Future[Seq[EoriPeriod]] = {
-    val hci: HeaderCarrier = hc.copy(authorization = Some(Authorization(s"Bearer ${appConfig.bearerToken}")))
-    http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}$eori")(reads, hci, implicitly)
-      .map { response =>
-        response.getEORIHistoryResponse.responseDetail.EORIHistory.map {
-          history => EoriPeriod(history.EORI, history.validFrom, history.validTo)
+    if(FeatureSwitch.MdgRequest.isEnabled()) {
+      val hci: HeaderCarrier = hc.copy(authorization = Some(Authorization(s"Bearer ${appConfig.bearerToken}")))
+      http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}$eori")(reads, hci, implicitly)
+        .map { response =>
+          response.getEORIHistoryResponse.responseDetail.EORIHistory.map {
+            history => EoriPeriod(history.EORI, history.validFrom, history.validTo)
+          }
         }
-      }
+    } else {
+      Future.successful(Nil)
+    }
   }
 
   def testSub21(eori: String)(implicit hc: HeaderCarrier, reads: HttpReads[HttpResponse], ec: ExecutionContext): Future[JsValue] = {
