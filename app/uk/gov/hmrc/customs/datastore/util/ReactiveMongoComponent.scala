@@ -41,6 +41,8 @@ trait ReactiveMongoComponent {
 class ReactiveMongoComponentImpl @Inject()(implicit config: Configuration, env: Environment, lifecycle: ApplicationLifecycle)
   extends ReactiveMongoComponent {
 
+  val log: LoggerLike = Logger(this.getClass)
+
   var cache = Map.empty[String, () => DB]
 
   def getDb(dbName: String): () => DB = {
@@ -60,7 +62,7 @@ class ReactiveMongoComponentImpl @Inject()(implicit config: Configuration, env: 
   }
 
   def mongoConnector(dbName: String)(implicit config: Configuration, env: Environment): Option[MongoConnector]  = {
-    Logger.info(s"ReactiveMongoComponent created for $dbName")
+    log.info(s"ReactiveMongoComponent created for $dbName")
 
     val mongoConfig = config.getConfig(s"${env.mode}.mongodb.$dbName")
       .getOrElse(config.getConfig(s"${Mode.Dev}.mongodb.$dbName")
@@ -71,7 +73,7 @@ class ReactiveMongoComponentImpl @Inject()(implicit config: Configuration, env: 
       case Some(uri) =>
 
         mongoConfig.getInt("channels").foreach { _ =>
-          Logger.warn("the mongodb.channels config key has been removed and is now ignored. Please use the mongodb URL option described here: https://docs.mongodb.org/manual/reference/connection-string/#connections-connection-options. https://github.com/ReactiveMongo/ReactiveMongo/blob/0.11.3/driver/src/main/scala/api/api.scala#L577")
+          log.warn("the mongodb.channels config key has been removed and is now ignored. Please use the mongodb URL option described here: https://docs.mongodb.org/manual/reference/connection-string/#connections-connection-options. https://github.com/ReactiveMongo/ReactiveMongo/blob/0.11.3/driver/src/main/scala/api/api.scala#L577")
         }
 
         val failoverStrategy: Option[FailoverStrategy] = mongoConfig.getConfig("failoverStrategy") match {

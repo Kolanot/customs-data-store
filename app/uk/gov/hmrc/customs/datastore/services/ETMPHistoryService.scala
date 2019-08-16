@@ -17,7 +17,7 @@
 package uk.gov.hmrc.customs.datastore.services
 
 import javax.inject.Inject
-import play.api.Logger
+import play.api.{Logger, LoggerLike}
 import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain.{Eori, EoriPeriod, HistoricEoriResponse}
@@ -28,7 +28,9 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class ETMPHistoryService @Inject()(appConfig:AppConfig, http: HttpClient) {
+class ETMPHistoryService @Inject()(appConfig: AppConfig, http: HttpClient) {
+
+  val log: LoggerLike = Logger(this.getClass)
 
   def getHistory(eori: Eori)(implicit hc: HeaderCarrier, reads: HttpReads[HistoricEoriResponse]): Future[Seq[EoriPeriod]] = {
     val hci: HeaderCarrier = hc.copy(authorization = Some(Authorization(s"Bearer ${appConfig.bearerToken}")))
@@ -40,13 +42,13 @@ class ETMPHistoryService @Inject()(appConfig:AppConfig, http: HttpClient) {
       }
   }
 
-  def testSub21(eori: String)(implicit  hc:HeaderCarrier, reads: HttpReads[HttpResponse], ec: ExecutionContext):Future[JsValue] = {
+  def testSub21(eori: String)(implicit hc: HeaderCarrier, reads: HttpReads[HttpResponse], ec: ExecutionContext): Future[JsValue] = {
 
     val hci: HeaderCarrier = hc
-    val mdgUrl =appConfig.eoriHistoryUrl + eori
-    Logger.info(s"This is a test MDG endpoint : $mdgUrl")
+    val mdgUrl = appConfig.eoriHistoryUrl + eori
+    log.info(s"This is a test MDG endpoint : $mdgUrl")
 
-    Logger.info("MDG request headers: "+hci.headers)
+    log.info("MDG request headers: " + hci.headers)
     http.GET[HttpResponse](mdgUrl)(reads, hci, ec).map(a => Json.parse(a.body))
 
   }

@@ -17,7 +17,7 @@
 package uk.gov.hmrc.customs.datastore.controllers
 
 import com.google.inject.{Inject, Singleton}
-import play.api.Logger
+import play.api.{Logger, LoggerLike}
 import play.api.libs.json
 import play.api.libs.json._
 import play.api.mvc._
@@ -44,6 +44,8 @@ import scala.util.{Failure, Success, Try}
 class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, graphQL: GraphQL)
                                  (implicit val executionContext: ExecutionContext) extends BaseController {
 
+  val log: LoggerLike = Logger(this.getClass)
+  
   /**
     * Parses graphql body of incoming request.
     *
@@ -52,7 +54,7 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
   def graphqlBody(): Action[JsValue] = serverAuth.async(parse.json) {
     implicit request: Request[JsValue] =>
 
-      Logger.info("GraphQL Request: " + request)
+      log.info("GraphQL Request: " + request)
 
         val extract: JsValue => (String, Option[String], Option[JsObject]) = query => (
           (query \ "query").as[String],
@@ -78,7 +80,7 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
         maybeQuery match {
           case Success((query, operationName, variables)) => executeQuery(query, variables, operationName)
           case Failure(error) => Future.successful {
-            Logger.error(s"graphQL query parsing error: ${error.getMessage}")
+            log.error(s"graphQL query parsing error: ${error.getMessage}")
             BadRequest(json.JsObject(Map(
               "ErrorMessage" ->  JsString(error.getMessage),
               "Stack" -> JsString(error.getStackTrace.mkString(" "))))
@@ -96,7 +98,6 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
     * @return simple result, which defines the response header and a body ready to send to the client
     */
   def executeQuery(query: String, variables: Option[JsObject] = None, operation: Option[String] = None): Future[Result] = {
-    Logger.info(s"query: $query")
     QueryParser.parse(query) match {
       case Success(queryAst: Document) =>
         Executor.execute(
@@ -105,10 +106,10 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
         variables = variables.getOrElse(Json.obj())
       ).map(Ok(_))
         .recover {
-          case error: QueryAnalysisError => Logger.error(s"graphql error: ${error.getMessage}"); BadRequest(error.resolveError)
-          case error: ErrorWithResolver => Logger.error(s"graphql error: ${error.getMessage}"); InternalServerError(error.resolveError)
+          case error: QueryAnalysisError => log.error(s"graphql error: ${error.getMessage}"); BadRequest(error.resolveError)
+          case error: ErrorWithResolver => log.error(s"graphql error: ${error.getMessage}"); InternalServerError(error.resolveError)
         }
-      case Failure(ex) => Logger.error(s"graphql error: ${ex.getMessage}"); Future(BadRequest(s"${ex.getMessage}"))
+      case Failure(ex) => log.error(s"graphql error: ${ex.getMessage}"); Future(BadRequest(s"${ex.getMessage}"))
     }
   }
 

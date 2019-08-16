@@ -16,11 +16,9 @@
 
 package uk.gov.hmrc.customs.datastore.config
 
-import java.net.InetAddress
-
 import javax.inject.{Inject, Singleton}
 import play.api.Mode.Mode
-import play.api.{Configuration, Environment, Logger}
+import play.api.{Configuration, Environment}
 import uk.gov.hmrc.customs.datastore.services.FeatureSwitch
 import uk.gov.hmrc.play.config.ServicesConfig
 
@@ -31,17 +29,19 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
   val authUrl = baseUrl("auth")
 
   val serverToken = "Bearer " + runModeConfiguration.getString("server-token").get
-  val bearerToken = "Bearer " + getConfString("actualmdg.bearer-token","secret-token")
+  val bearerToken = "Bearer " + getConfString("actualmdg.bearer-token", "secret-token")
 
-  def eoriHistoryUrl:String = FeatureSwitch.ActualMdg.isEnabled() match {
+  def eoriHistoryUrl: String = FeatureSwitch.ActualMdg.isEnabled() match {
     case true => baseUrl("actualmdg") / getConfString("actualmdg.historicEoriEndpoint", "config-error")
-    case false => baseUrl("mdg")  / getConfString("mdg.historicEoriEndpoint", "config-error")
+    case false => baseUrl("mdg") / getConfString("mdg.historicEoriEndpoint", "config-error")
   }
 
-  implicit class URLLike(left:String){
-    def /(right:String):String = checkEnding(left) + "/" + checkBeginning(right)
-    def checkEnding(in:String):String = if (in.lastIndexOf("/") == in.size - 1) in.take(in.size-1) else in
-    def checkBeginning(in:String):String = if (in.indexOf("/") == 0) in.drop(1) else in
+  implicit class URLLike(left: String) {
+    def /(right: String): String = checkEnding(left) + "/" + checkBeginning(right)
+
+    def checkEnding(in: String): String = if (in.lastIndexOf("/") == in.size - 1) in.take(in.size - 1) else in
+
+    def checkBeginning(in: String): String = if (in.indexOf("/") == 0) in.drop(1) else in
   }
 
 }

@@ -17,7 +17,7 @@
 package uk.gov.hmrc.customs.datastore.graphql
 
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
+import play.api.{Logger, LoggerLike}
 import sangria.macros.derive._
 import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput, ResultMarshaller}
 import sangria.schema._
@@ -38,6 +38,8 @@ trait InputUnmarshallerGenerator {
 }
 @Singleton
 class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) extends InputUnmarshallerGenerator{
+
+  val log: LoggerLike = Logger(this.getClass)
 
   val NotificationEmail = "notificationEmail"
   val Address = "address"
@@ -80,13 +82,12 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) 
         val isHisricEoriLoaded = eventualTradarData.map( a => a.map(b => b.eoriHistory.headOption.find( c => c.validFrom.isEmpty && c.validUntil.isEmpty).isDefined ).getOrElse(true))
         val isHistoricEoriQueried = sangriaContext.astFields.flatMap(_.selections).map(_.renderPretty).find(_.contains("eoriHistory")).isDefined
         isHisricEoriLoaded.flatMap { mustRequest =>
-          Logger.info(s"eori: $eori, isHisricEoriLoaded : $mustRequest , isHistoricEoriQueried: $isHistoricEoriQueried")
-          eventualTradarData.foreach(a => Logger.info("OriginalTraderData: " + a))
+          log.info(s"Query 'byEori' cache status - isHisricEoriLoaded : $mustRequest , isHistoricEoriQueried: $isHistoricEoriQueried")
           (mustRequest && isHistoricEoriQueried) match {
             case true =>
               for {
                 eoriHistory <- etmp.getHistory(eori)
-                _ <- Future.successful(Logger.info("EoriHistory: " + eoriHistory))
+                _ <- Future.successful(log.info("Query 'byEori' request result - EoriHistory length: " + eoriHistory.length))
                 _ <- eoriStore.saveEoris(eoriHistory)
                 traderData <- eoriStore.findByEori(eori)
               } yield traderData
@@ -118,6 +119,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) 
 
         for {
           result <- eoriStore.upsertByEori(eori,email)
+          _ <- Future.successful(log.info(s"Mutation 'byEori' request result: $result"))
           eoriHistory <- eventualEoriHistory
           _ <- eoriStore.saveEoris(eoriHistory)
         } yield result
