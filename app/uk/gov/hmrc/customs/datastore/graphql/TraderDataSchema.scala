@@ -82,12 +82,12 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) 
         val isHisricEoriLoaded = eventualTradarData.map( a => a.map(b => b.eoriHistory.headOption.find( c => c.validFrom.isEmpty && c.validUntil.isEmpty).isDefined ).getOrElse(true))
         val isHistoricEoriQueried = sangriaContext.astFields.flatMap(_.selections).map(_.renderPretty).find(_.contains("eoriHistory")).isDefined
         isHisricEoriLoaded.flatMap { mustRequest =>
-          log.info(s"Query 'byEori' cache status - isHisricEoriLoaded : $mustRequest , isHistoricEoriQueried: $isHistoricEoriQueried")
+          log.warn(s"Query 'byEori' cache status - isHisricEoriLoaded : $mustRequest , isHistoricEoriQueried: $isHistoricEoriQueried")
           (mustRequest && isHistoricEoriQueried) match {
             case true =>
               for {
                 eoriHistory <- etmp.getHistory(eori)
-                _ <- Future.successful(log.info("Query 'byEori' request result - EoriHistory length: " + eoriHistory.length))
+                _ <- Future.successful(log.warn("Query 'byEori' request result - EoriHistory length: " + eoriHistory.length))
                 _ <- eoriStore.saveEoris(eoriHistory)
                 traderData <- eoriStore.findByEori(eori)
               } yield traderData
@@ -119,7 +119,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) 
 
         for {
           result <- eoriStore.upsertByEori(eori,email)
-          _ <- Future.successful(log.info(s"Mutation 'byEori' request result: $result"))
+          _ <- Future.successful(log.warn(s"Mutation 'byEori' request result: $result"))
           eoriHistory <- eventualEoriHistory
           _ <- eoriStore.saveEoris(eoriHistory)
         } yield result
