@@ -51,6 +51,5 @@ class ServerTokenAuthorizationSpec extends WordSpec with MustMatchers with Futur
       result mustBe None
     }
 
-
   }
 }

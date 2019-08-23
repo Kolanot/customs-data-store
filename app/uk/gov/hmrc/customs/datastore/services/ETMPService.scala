@@ -28,7 +28,7 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class ETMPHistoryService @Inject()(appConfig: AppConfig, http: HttpClient) {
+class ETMPService @Inject()(appConfig: AppConfig, http: HttpClient) {
 
   val log: LoggerLike = Logger(this.getClass)
 
@@ -44,6 +44,12 @@ class ETMPHistoryService @Inject()(appConfig: AppConfig, http: HttpClient) {
     } else {
       Future.successful(Nil)
     }
+  }
+
+  // TODO: implement this
+  def getCompanyInformation(eori: Eori)(implicit hc: HeaderCarrier): Future[Unit] = {
+    if (FeatureSwitch.GetCompanyInfoFromMdg.isEnabled()) {} else {}
+    Future.successful()
   }
 
   def testSub21(eori: String)(implicit hc: HeaderCarrier, reads: HttpReads[HttpResponse], ec: ExecutionContext): Future[JsValue] = {

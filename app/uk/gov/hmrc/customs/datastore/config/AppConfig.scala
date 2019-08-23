@@ -36,6 +36,12 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
     case false => baseUrl("mdg") / getConfString("mdg.historicEoriEndpoint", "config-error")
   }
 
+  // TODO: rename actualmdg -> mdg; mdg -> mdg-stub
+  def companyInformationUrl: String = FeatureSwitch.GetCompanyInfoFromMdg.isEnabled() match {
+    case true => baseUrl("actualmdg") / getConfString("actualmdg.companyInformationEndpoint", "config-error")
+    case false => baseUrl("mdg") / getConfString("mdg.companyInformationEndpoint", "config-error")
+  }
+
   implicit class URLLike(left: String) {
     def /(right: String): String = checkEnding(left) + "/" + checkBeginning(right)
 

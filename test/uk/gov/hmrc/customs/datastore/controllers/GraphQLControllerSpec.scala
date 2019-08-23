@@ -32,7 +32,7 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.graphql.{EoriPeriodInput, GraphQL, InputEmail, TraderDataSchema}
-import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore, MongoSpecSupport, ServerTokenAuthorization}
+import uk.gov.hmrc.customs.datastore.services.{ETMPService, EoriStore, MongoSpecSupport, ServerTokenAuthorization}
 import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.concurrent.Future
@@ -51,7 +51,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
     import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
-    val historyService = mock[ETMPHistoryService]
+    val historyService = mock[ETMPService]
     when(historyService.getHistory(is(testEori))(any(), any())).thenReturn(Future.successful(Seq(EoriPeriod(testEori, Some("1987.03.20"), None))))
     val mockEoriStore = mock[EoriStore]
     val env = Environment.simple()
@@ -171,7 +171,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
         override def mongoConnector: MongoConnector = mongoConnectorForTest
       })
 
-      val historyService = mock[ETMPHistoryService]
+      val historyService = mock[ETMPService]
       val historicEoris = Seq(
         EoriPeriod(testEori, Some("2010-01-20T00:00:00Z"), None),
         EoriPeriod("GB222222", Some("2002-01-20T00:00:00Z"), Some("2001-01-20T00:00:00Z")),

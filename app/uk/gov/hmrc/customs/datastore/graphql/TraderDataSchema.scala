@@ -22,7 +22,7 @@ import sangria.macros.derive._
 import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput, ResultMarshaller}
 import sangria.schema._
 import uk.gov.hmrc.customs.datastore.domain._
-import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
+import uk.gov.hmrc.customs.datastore.services.{ETMPService, EoriStore}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -37,7 +37,7 @@ trait InputUnmarshallerGenerator {
   }
 }
 @Singleton
-class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) extends InputUnmarshallerGenerator{
+class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: ETMPService) extends InputUnmarshallerGenerator{
 
   val log: LoggerLike = Logger(this.getClass)
 

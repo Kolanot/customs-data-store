@@ -59,21 +59,12 @@ object FeatureSwitch {
       val systemProps = sys.props.+=((systemPropertyName, value.toString))
     }
 
-//    def action(implicit errorHandler: ErrorHandler): ActionBuilder[Request] with ActionFilter[Request] = new ActionBuilder[Request] with ActionFilter[Request] {
-//
-//      def filter[A](input: Request[A]): Future[Option[Result]] = Future.successful {
-//        if (isEnabled()) {
-//          None
-//        }
-//        else {
-//          Some(NotFound(errorHandler.notFoundTemplate(input)))
-//        }
-//      }
-//    }
   }
 
   case object ActualMdg extends {val name = "actual-mdg"} with FeatureName  //This is to switch between sdes stub and real sdes on QA
 
   case object MdgRequest extends {val name = "mdg-request"} with FeatureName  //This is to switch between sdes stub and real sdes on QA
+
+  case object GetCompanyInfoFromMdg extends {val name = "get-company-info-from-mdg"} with FeatureName
 
 }

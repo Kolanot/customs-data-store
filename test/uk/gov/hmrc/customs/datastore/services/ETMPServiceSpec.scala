@@ -34,7 +34,7 @@ import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
 
-class ETMPHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSugar with DefaultAwaitTimeout with FutureAwaits {
+class ETMPServiceSpec extends FlatSpec with MustMatchers with MockitoSugar with DefaultAwaitTimeout with FutureAwaits {
 
   protected def generateResponse(eoris:Seq[Eori]):HistoricEoriResponse = {
     HistoricEoriResponse(
@@ -67,7 +67,7 @@ class ETMPHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
 
     val appConfig = new AppConfig(configuration,env)
     val mockHttp = mock[HttpClient]
-    val service = new ETMPHistoryService(appConfig, mockHttp)
+    val service = new ETMPService(appConfig, mockHttp)
     implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
     implicit val hc: HeaderCarrier = HeaderCarrier()
   }
@@ -128,6 +128,12 @@ class ETMPHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
 
     val  response = await(service.getHistory(EORI1))
     response mustBe List()
+  }
+
+  "The ETMPService.getCompanyInformation" should "when featureswitch get-company-info-from-mdg is enabled" in new ETMPScenario {
+    pending
+    //TODO: add featureswitch test
+    FeatureSwitch.GetCompanyInfoFromMdg.enable()
   }
 
 }
