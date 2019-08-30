@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.customs.datastore.services
 
+import java.time.format.DateTimeFormatter
+import java.time.{LocalDateTime, ZoneId}
+
 import javax.inject.Inject
 import play.api.libs.json.{JsValue, Json}
 import play.api.{Logger, LoggerLike}
@@ -61,6 +64,30 @@ class ETMPService @Inject()(appConfig: AppConfig, http: HttpClient) {
     log.info("MDG request headers: " + hci.headers)
     http.GET[HttpResponse](mdgUrl)(reads, hci, ec).map(a => Json.parse(a.body))
 
+  }
+
+  def testSub09(eori: String)(implicit hc: HeaderCarrier): Future[JsValue] = {
+    val dateFormat = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss z").withZone(ZoneId.systemDefault())
+    val localDate = LocalDateTime.now().format(dateFormat)
+
+    val headers = Seq(("Date"->localDate),
+      ("X-Correlation-ID"->java.util.UUID.randomUUID().toString),
+      ("X-Forwarded-Host"->"MDTP"),
+      ("Accept"->"application/json"))
+
+    val hcWithExtraHeaders: HeaderCarrier = hc.copy(authorization = Some(Authorization(s"Bearer ${appConfig.bearerToken}")), extraHeaders = hc.extraHeaders ++ headers)
+
+    log.info("MDG request headers: " + hcWithExtraHeaders)
+
+    val queryParams = Seq(("regime"->"CDS"),("acknowledgementReference"->"21a2b17559e64b14be257a112a7d9e8e"),("EORI"->eori))
+
+    val mdgUrl = appConfig.eoriHistoryUrl + "/subscriptions/subscriptiondisplay/v1"
+
+    log.info("MDG sub09 URL: " + mdgUrl)
+
+    http.GET[HttpResponse](mdgUrl, queryParams)(implicitly, hcWithExtraHeaders, implicitly)
+      .map{ a => log.info(a.body)
+        Json.parse(a.body)}
   }
 
 }

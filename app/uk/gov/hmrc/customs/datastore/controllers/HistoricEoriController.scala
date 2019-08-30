@@ -31,4 +31,8 @@ class HistoricEoriController @Inject()(val authConnector: CustomAuthConnector, e
     etmp.testSub21(eori).map(a => Ok(a))
   }
 
+  def mdgGetEmail(eori: String) = Action.async { implicit req =>
+    etmp.testSub09(eori).map(a => Ok(a))
+  }
+
 }
