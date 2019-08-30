@@ -81,7 +81,7 @@ class ETMPService @Inject()(appConfig: AppConfig, http: HttpClient) {
 
     val queryParams = Seq(("regime"->"CDS"),("acknowledgementReference"->"21a2b17559e64b14be257a112a7d9e8e"),("EORI"->eori))
 
-    val mdgUrl = appConfig.eoriHistoryUrl + "/subscriptions/subscriptiondisplay/v1"
+    val mdgUrl = appConfig.companyInformationUrl
 
     log.info("MDG sub09 URL: " + mdgUrl)
 
