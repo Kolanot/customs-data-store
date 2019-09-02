@@ -26,6 +26,7 @@ object FeatureSwitch {
     name match {
       case ActualMdg.name => ActualMdg
       case MdgRequest.name => MdgRequest
+      case GetCompanyInfoFromMdg.name => GetCompanyInfoFromMdg
     }
   }
 
