@@ -73,9 +73,10 @@ class ETMPService @Inject()(appConfig: AppConfig, http: HttpClient) {
     val headers = Seq(("Date"->localDate),
       ("X-Correlation-ID"->java.util.UUID.randomUUID().toString),
       ("X-Forwarded-Host"->"MDTP"),
+      ("Content-Type"->"application/json"),
       ("Accept"->"application/json"))
 
-    val hcWithExtraHeaders: HeaderCarrier = hc.copy(authorization = Some(Authorization(s"Bearer ${appConfig.bearerToken}")), extraHeaders = hc.extraHeaders ++ headers)
+    val hcWithExtraHeaders: HeaderCarrier = hc.copy(authorization = Some(Authorization(appConfig.bearerToken)), extraHeaders = hc.extraHeaders ++ headers)
 
     log.info("MDG request headers: " + hcWithExtraHeaders)
 
