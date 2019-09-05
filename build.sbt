@@ -23,7 +23,7 @@ val compileDeps = Seq(
   "uk.gov.hmrc"             %% "simple-reactivemongo"     % "7.20.0-play-25",
   "org.sangria-graphql"     %% "sangria"                  % "1.4.2",
   "org.sangria-graphql"     %% "sangria-play-json"        % "1.0.0",
-  "uk.gov.hmrc"             %% "bootstrap-play-25"        % "4.11.0"
+  "uk.gov.hmrc"             %% "bootstrap-play-25"        % "4.16.0"
 )
 
 val testDeps = Seq(
