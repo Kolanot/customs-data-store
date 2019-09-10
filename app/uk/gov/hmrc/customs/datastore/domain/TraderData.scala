@@ -30,8 +30,16 @@ case class NotificationEmail(address: Option[EmailAddress],
 case class TraderData(eoriHistory: Seq[EoriPeriod],
                       notificationEmail:Option[NotificationEmail])
 
+//case class TraderDataContainer(eoriHistory: Seq[EoriPeriod],
+//                               notificationEmail:Option[NotificationEmail],
+//                               lastUpdated: DateTime
+//                              ) {
+//  def toTraderData():TraderData = TraderData(eoriHistory,notificationEmail)
+//}
+
 object TraderData {
   implicit val eoriPeriodFormat = Json.format[EoriPeriod]
   implicit val emailFormat = Json.format[NotificationEmail]
   implicit val traderDataFormat = Json.format[TraderData]
+//  implicit val traderDataContainerFormat = Json.format[TraderDataContainer]
 }

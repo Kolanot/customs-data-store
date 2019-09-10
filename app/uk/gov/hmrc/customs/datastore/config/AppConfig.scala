@@ -36,11 +36,12 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
     case false => baseUrl("mdg") / getConfString("mdg.historicEoriEndpoint", "config-error")
   }
 
+  val dbTimeToLive = getConfInt("mongoTimeToLiveInSeconds", 30*24*60*60)
+
+  //Remove duplicate / from urls read from config
   implicit class URLLike(left: String) {
     def /(right: String): String = checkEnding(left) + "/" + checkBeginning(right)
-
     def checkEnding(in: String): String = if (in.lastIndexOf("/") == in.size - 1) in.take(in.size - 1) else in
-
     def checkBeginning(in: String): String = if (in.indexOf("/") == 0) in.drop(1) else in
   }
 

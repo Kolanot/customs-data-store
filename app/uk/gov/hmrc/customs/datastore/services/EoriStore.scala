@@ -18,11 +18,12 @@ package uk.gov.hmrc.customs.datastore.services
 
 import javax.inject._
 import org.joda.time.{DateTime, DateTimeZone}
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.Json
 import play.api.libs.json.Json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
+import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain.TraderData._
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.graphql.{EoriPeriodInput, InputEmail}
@@ -34,19 +35,18 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
+class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent, appConfig:AppConfig)
   extends {
-    val TheTraderData = "traderData"
-    val FieldEoriHistory = "eoriHistory"
-    val FieldEori = "eori"
-    val EoriSearchKey = s"$TheTraderData.$FieldEoriHistory.$FieldEori"
-    val FieldEoriValidFrom = "validFrom"
-    val FieldEoriValidUntil = "validUntil"
-    val FieldEmails = "notificationEmail"
-    val FieldEmailAddress = "address"
-    val FieldTimestamp = "timestamp"
-    val EmailAddressSearchKey = s"$TheTraderData.$FieldEmails.$FieldEmailAddress"
-    val EmailTimestampSearchKey = s"$TheTraderData.$FieldEmails.$FieldTimestamp"
+    protected val FieldEoriHistory = "eoriHistory"
+    protected val FieldEori = "eori"
+    protected val EoriSearchKey = s"$FieldEoriHistory.$FieldEori"
+    protected val FieldEoriValidFrom = "validFrom"
+    protected val FieldEoriValidUntil = "validUntil"
+    protected val FieldEmails = "notificationEmail"
+    protected val FieldEmailAddress = "address"
+    protected val FieldTimestamp = "timestamp"
+    protected val EmailAddressSearchKey = s"$FieldEmails.$FieldEmailAddress"
+    protected val EmailTimestampSearchKey = s"$FieldEmails.$FieldTimestamp"
   }
     with ReactiveRepository[TraderData, BSONObjectID](
     collectionName = "dataStore",
@@ -55,62 +55,73 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent)
     idFormat = ReactiveMongoFormats.objectIdFormats
   ) with TTLIndexing[TraderData, BSONObjectID] {
 
-  override val expireAfterSeconds: Long = 10
+  override val expireAfterSeconds: Long = appConfig.dbTimeToLive
 
   override def additionalIndexes = Seq(
-    Index(Seq(EoriSearchKey -> IndexType.Ascending), name = Some(TheTraderData + FieldEoriHistory + FieldEori + "Index"), unique = true, sparse = true)
+    Index(Seq(EoriSearchKey -> IndexType.Ascending), name = Some(FieldEoriHistory + FieldEori + "Index"), unique = true, sparse = true)
   )
 
-  def findByEori(eori: String): Future[Option[TraderData]] = {
-    import reactivemongo.play.json.BSONDocumentWrites
+  def findByEori(eori: Eori): Future[Option[TraderData]] = {
     val selector = BSONDocument(EoriSearchKey -> eori)
-    collection.find(selector).one[JsObject].map(_.map { obj => (obj \ TheTraderData).get.as[TraderData] })
+    find(EoriSearchKey -> eori).map(_.headOption)
   }
 
-  def getLastUpdated() = "lastUpdated" -> toJsFieldJsValueWrapper(DateTime.now(DateTimeZone.UTC))(ReactiveMongoFormats.dateTimeWrite)
+  def getLastUpdated() = LastUpdated -> toJsFieldJsValueWrapper(DateTime.now(DateTimeZone.UTC))(ReactiveMongoFormats.dateTimeWrite)
 
-  //TODO Error if you had email addresses this will overwrite it (remove it)
-  def saveEoris(eoriHistories: Seq[EoriPeriod]): Future[Any] = {
-    val eoriHistoryJson = Json.obj(FieldEoriHistory -> toJsFieldJsValueWrapper(eoriHistories))
+  /*
+  This method will overwrite the eoriHistory field, with the given EoriPeriods but leaves the other fields untouched
+   */
+  def updateHistoricEoris(eoriHistories: Seq[EoriPeriod]): Future[Any] = {
+    val eoriHistoryJson = FieldEoriHistory -> toJsFieldJsValueWrapper(eoriHistories)
     findAndUpdate(
       query = Json.obj(EoriSearchKey -> Json.obj("$in" -> eoriHistories.map(_.eori))),
-      update = Json.obj("$set" -> Json.obj(getLastUpdated, TheTraderData -> eoriHistoryJson)),
+      update = Json.obj("$set" -> Json.obj(getLastUpdated, eoriHistoryJson)),
       upsert = true
     )
   }
 
-  //TODO Error if you have historic eoris this will overwrite them with the eori that was passed in
-  def upsertByEori(eoriPeriod: EoriPeriodInput, email: Option[InputEmail]): Future[Boolean] = {
+  def upsertByEori(eoriPeriodInput: EoriPeriodInput, email: Option[InputEmail]): Future[Boolean] = {
     val updateEmailAddress = email.flatMap(_.address).map(address => (EmailAddressSearchKey -> toJsFieldJsValueWrapper(address)))
     val updateEmailTimestamp = email.flatMap(_.timestamp).map(timestamp => (EmailTimestampSearchKey -> toJsFieldJsValueWrapper(timestamp)))
     val updateEmailFields = Seq(updateEmailAddress, updateEmailTimestamp).flatten
 
-    val updateEoriValidFrom = eoriPeriod.validFrom.map(vFrom => (FieldEoriValidFrom -> toJsFieldJsValueWrapper(vFrom)))
-    val updateEoriValidUntil = eoriPeriod.validUntil.map(vUntil => (FieldEoriValidUntil -> toJsFieldJsValueWrapper(vUntil)))
-    val updateEori = Option(FieldEori -> toJsFieldJsValueWrapper(eoriPeriod.eori))
+    val updateEoriValidFrom = eoriPeriodInput.validFrom.map(vFrom => (FieldEoriValidFrom -> toJsFieldJsValueWrapper(vFrom)))
+    val updateEoriValidUntil = eoriPeriodInput.validUntil.map(vUntil => (FieldEoriValidUntil -> toJsFieldJsValueWrapper(vUntil)))
+    val updateEori = Option(FieldEori -> toJsFieldJsValueWrapper(eoriPeriodInput.eori))
     val updateHistoricEoriFields = Seq(updateEoriValidFrom, updateEoriValidUntil, updateEori).flatten
-    val historicEoriInnerJson = Json.obj(updateHistoricEoriFields: _*)
-    val eoriHistoryJson = s"$TheTraderData.$FieldEoriHistory" -> toJsFieldJsValueWrapper(Json.arr(toJsFieldJsValueWrapper(historicEoriInnerJson)))
-
-    val updateFields = Json.obj(getLastUpdated +: eoriHistoryJson +: updateEmailFields: _*)
-    val result = findAndUpdate(
-      query = Json.obj(EoriSearchKey -> eoriPeriod.eori),
-      update = Json.obj("$set" -> toJsFieldJsValueWrapper(updateFields)),
-      upsert = true
-    )
-    result.map(_.lastError.flatMap(_.err).isEmpty)
-  }
 
 
-  //TODO remove this when the above two methods are fixed
-  def temporaryInsert(traderData: TraderData): Future[Boolean] = {
-    val allData = Json.obj(getLastUpdated, TheTraderData -> toJsFieldJsValueWrapper(traderData))
-    val result = findAndUpdate(
-      query = Json.obj(EoriSearchKey -> traderData.eoriHistory.head.eori),
-      update = Json.obj("$set" -> allData),
-      upsert = true
-    )
-    result.map(_.lastError.flatMap(_.err).isEmpty)
+    findByEori(eoriPeriodInput.eori)
+        .flatMap{maybeTraderData =>
+          maybeTraderData match {
+            case Some(traderData) => //The TraderData already exists (based on the EORI), we have to update it
+              val allEoriUpdates = updateHistoricEoriFields.map(eu => (FieldEoriHistory + ".$[x]." + eu._1 -> eu._2))
+              val eoriRelated = ("$set"  -> toJsFieldJsValueWrapper(Json.obj(allEoriUpdates: _*)))
+              findAndUpdate(  //For some reason I am unable to submit eori updates at a position and email updates in the same Json object
+                query = Json.obj(EoriSearchKey -> eoriPeriodInput.eori),
+                update = Json.obj(eoriRelated),
+                upsert = true,
+                arrayFilters = Seq(Json.obj(s"x.$FieldEori" -> eoriPeriodInput.eori))
+              ).flatMap{ otherQuery =>
+                val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(getLastUpdated +: updateEmailFields: _*)))
+                findAndUpdate(
+                  query = Json.obj(EoriSearchKey -> eoriPeriodInput.eori),
+                  update = Json.obj(updateSet),
+                  upsert = true
+                )
+              }
+            case None =>  //The TraderData (based on the EORI) doesn't exist, so we have to insert it
+              val eoriUpdates = FieldEoriHistory -> toJsFieldJsValueWrapper(Json.arr(Json.obj(updateHistoricEoriFields: _*)))
+              val allUpdates = Json.obj(getLastUpdated +: eoriUpdates +: updateEmailFields : _*)
+              findAndUpdate(
+                query = Json.obj(EoriSearchKey -> eoriPeriodInput.eori),
+                update = Json.obj("$set" -> toJsFieldJsValueWrapper(allUpdates)),
+                upsert = true
+              )
+
+          }
+        }
+      .map(_.lastError.flatMap(_.err).isEmpty)
   }
 
 }

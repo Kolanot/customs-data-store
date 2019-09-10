@@ -30,9 +30,9 @@ trait TTLIndexing[A, ID] {
   val expireAfterSeconds: Long
   def additionalIndexes: Seq[Index] = Seq.empty[Index]
 
-
-  private lazy val LastUpdatedIndex = "lastUpdatedIndex"
-  private lazy val ExpireAfterSeconds = "expireAfterSeconds"
+  protected val LastUpdated = "lastUpdated"
+  private val LastUpdatedIndex = "lastUpdatedIndex"
+  private val ExpireAfterSeconds = "expireAfterSeconds"
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
     import reactivemongo.bson.DefaultBSONHandlers._
@@ -50,7 +50,7 @@ trait TTLIndexing[A, ID] {
 
   private def ensureCustomIndexes(otherIndexes:Seq[Index] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
     val lastUpdatedIndex =       Index(
-      key = Seq("lastUpdated" -> IndexType.Ascending),
+      key = Seq(LastUpdated -> IndexType.Ascending),
       name = Some(LastUpdatedIndex),
       options = BSONDocument(ExpireAfterSeconds -> expireAfterSeconds)
     )

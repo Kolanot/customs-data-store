@@ -17,19 +17,14 @@
 package uk.gov.hmrc.customs.datastore.graphql
 
 import javax.inject.{Inject, Singleton}
-import org.joda.time.format.ISODateTimeFormat
-import org.joda.time.{DateTime, DateTimeZone}
 import play.api.{Logger, LoggerLike}
-import sangria.ast.StringValue
 import sangria.macros.derive._
-import sangria.marshalling.{CoercedScalaResultMarshaller, DateSupport, FromInput, ResultMarshaller}
+import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput, ResultMarshaller}
 import sangria.schema._
-import sangria.validation.ValueCoercionViolation
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.services.{ETMPHistoryService, EoriStore}
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -50,25 +45,6 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) 
   val Address = "address"
   val FieldTimestamp = "timestamp"
   val EoriField = "eoriHistory"
-
-  case object DateCoercionViolation extends ValueCoercionViolation("Date value expected")
-
-  def parseDate(s: String) = Try(new DateTime(s, DateTimeZone.UTC)) match {
-    case Success(date) ⇒ Right(date)
-    case Failure(_) ⇒ Left(DateCoercionViolation)
-  }
-  implicit val DateTimeType = ScalarType[DateTime]("DateTime",
-    coerceOutput = (d, caps) ⇒
-      if (caps.contains(DateSupport)) d.toDate
-      else ISODateTimeFormat.dateTime().print(d),
-    coerceUserInput = {
-      case s: String ⇒ parseDate(s)
-      case _ ⇒ Left(DateCoercionViolation)
-    },
-    coerceInput = {
-      case StringValue(s, _, _,_,_) ⇒ parseDate(s)
-      case _ ⇒ Left(DateCoercionViolation)
-    })
 
   implicit val EoriHistoryType: ObjectType[Unit, EoriPeriod] = deriveObjectType[Unit, EoriPeriod](ObjectTypeName("EoriHistory"))
   implicit val EmailType: ObjectType[Unit, NotificationEmail] = deriveObjectType[Unit, NotificationEmail](ObjectTypeName("Email"))
@@ -112,7 +88,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) 
               for {
                 eoriHistory <- etmp.getHistory(eori)
                 _ <- Future.successful(log.warn("Query 'byEori' request result - EoriHistory length: " + eoriHistory.length))
-                _ <- eoriStore.saveEoris(eoriHistory)
+                _ <- eoriStore.updateHistoricEoris(eoriHistory)
                 traderData <- eoriStore.findByEori(eori)
               } yield traderData
             case false =>
@@ -145,7 +121,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,etmp: ETMPHistoryService) 
           result <- eoriStore.upsertByEori(eori,email)
           _ <- Future.successful(log.warn(s"Mutation 'byEori' request result: $result"))
           eoriHistory <- eventualEoriHistory
-          _ <- eoriStore.saveEoris(eoriHistory)
+          _ <- eoriStore.updateHistoricEoris(eoriHistory)
         } yield result
       }
     )
