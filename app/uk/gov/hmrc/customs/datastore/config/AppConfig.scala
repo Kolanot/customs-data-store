@@ -42,6 +42,9 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
     case false => baseUrl("mdg") / getConfString("mdg.companyInformationEndpoint", "config-error")
   }
 
+  val dbTimeToLive = getConfInt("mongodb.timeToLiveInSeconds", 30*24*60*60)
+
+  //Remove duplicate / from urls read from config
   implicit class URLLike(left: String) {
     def /(right: String): String = checkEnding(left) + "/" + checkBeginning(right)
 

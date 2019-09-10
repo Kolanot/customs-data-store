@@ -88,7 +88,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: ETMPService) extend
               for {
                 eoriHistory <- etmp.getHistory(eori)
                 _ <- Future.successful(log.warn("Query 'byEori' request result - EoriHistory length: " + eoriHistory.length))
-                _ <- eoriStore.saveEoris(eoriHistory)
+                _ <- eoriStore.updateHistoricEoris(eoriHistory)
                 traderData <- eoriStore.findByEori(eori)
               } yield traderData
             case false =>
@@ -121,7 +121,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: ETMPService) extend
           result <- eoriStore.upsertByEori(eori,email)
           _ <- Future.successful(log.warn(s"Mutation 'byEori' request result: $result"))
           eoriHistory <- eventualEoriHistory
-          _ <- eoriStore.saveEoris(eoriHistory)
+          _ <- eoriStore.updateHistoricEoris(eoriHistory)
         } yield result
       }
     )

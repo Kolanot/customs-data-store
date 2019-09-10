@@ -99,7 +99,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
         Seq(EoriPeriod(eoriNumber, None, None)),
         Some(NotificationEmail(Some(emailAddress), None)))
 //      when(mockEoriStore.findByEori(any())).(Future.successful(Some(traderData)))
-      when(mockEoriStore.saveEoris(any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
 
       val historicEoris = Seq(
         EoriPeriod(testEori, Some("2010-01-20T00:00:00Z"), None),
@@ -121,7 +121,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
     "Insert by Eori" in new GraphQLScenario() {
       when(mockEoriStore.upsertByEori(any(), any())).thenReturn(Future.successful(true))
-      when(mockEoriStore.saveEoris(any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
       val query = s"""{"query" : "mutation {byEori(eoriHistory:{eori:\\"$testEori\\" validFrom:\\"$testValidFrom\\" validUntil:\\"$testValidUntil\\"}, notificationEmail: {address: \\"$testEmail\\", timestamp: \\"$testTimestamp\\"} )}" }"""
       val request = authorizedRequest.withBody(Json.parse(query))
       val result = contentAsString(controller.graphqlBody.apply(request))
@@ -135,7 +135,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
     "Insert an EORI with no email address" in new GraphQLScenario() {
       when(mockEoriStore.upsertByEori(any(), any())).thenReturn(Future.successful(true))
-      when(mockEoriStore.saveEoris(any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
       val query = s"""{"query" : "mutation {byEori(eoriHistory:{eori:\\"$testEori\\" validFrom:\\"$testValidFrom\\" validUntil:\\"$testValidUntil\\"} )}" }"""
       val request = authorizedRequest.withBody(Json.parse(query))
       val result = contentAsString(controller.graphqlBody.apply(request))
@@ -148,7 +148,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
     "Raise exception when calling no eori is provided" in new GraphQLScenario() {
       when(mockEoriStore.upsertByEori(any(), any())).thenReturn(Future.successful(true))
-      when(mockEoriStore.saveEoris(any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
       val query = s"""{"query" : "mutation {byEori(notificationEmail: {address: \\"$testEmail\\", timestamp: \\"$testTimestamp\\"} )}" }"""
       val request = authorizedRequest.withBody(Json.parse(query))
       val result = contentAsString(controller.graphqlBody.apply(request))
@@ -167,10 +167,6 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val as = ActorSystem("EoriStoreAs")
       val materializer = ActorMaterializer()(as)
 
-      val eoriStore = new EoriStore(new ReactiveMongoComponent {
-        override def mongoConnector: MongoConnector = mongoConnectorForTest
-      })
-
       val historyService = mock[ETMPService]
       val historicEoris = Seq(
         EoriPeriod(testEori, Some("2010-01-20T00:00:00Z"), None),
@@ -183,6 +179,10 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val configuration = Configuration.load(env)
       val appConfig = new AppConfig(configuration, env)
       val authConnector = new ServerTokenAuthorization(appConfig)
+
+      val eoriStore = new EoriStore(new ReactiveMongoComponent {
+        override def mongoConnector: MongoConnector = mongoConnectorForTest
+      }, appConfig)
 
       val schema = new TraderDataSchema(eoriStore, historyService)
       val graphQL = new GraphQL(schema)
