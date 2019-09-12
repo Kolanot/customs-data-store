@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.datastore.domain
+package uk.gov.hmrc.customs.datastore.domain.onwire
 
 import play.api.libs.json.Json
+import uk.gov.hmrc.customs.datastore.domain.Eori
 
 /*
  * on the wire format data models for the MDG Sub 21 request, which returns historic Eoris for a given Eori

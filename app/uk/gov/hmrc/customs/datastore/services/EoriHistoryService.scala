@@ -23,7 +23,8 @@ import javax.inject.Inject
 import play.api.libs.json.{JsValue, Json}
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
-import uk.gov.hmrc.customs.datastore.domain.{Eori, EoriPeriod, HistoricEoriResponse}
+import uk.gov.hmrc.customs.datastore.domain.onwire.HistoricEoriResponse
+import uk.gov.hmrc.customs.datastore.domain.{Eori, EoriPeriod}
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.http.{HeaderCarrier, HttpReads, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
@@ -31,7 +32,7 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class ETMPService @Inject()(appConfig: AppConfig, http: HttpClient) {
+class EoriHistoryService @Inject()(appConfig: AppConfig, http: HttpClient) {
 
   val log: LoggerLike = Logger(this.getClass)
 
@@ -47,12 +48,6 @@ class ETMPService @Inject()(appConfig: AppConfig, http: HttpClient) {
     } else {
       Future.successful(Nil)
     }
-  }
-
-  // TODO: implement this
-  def getCompanyInformation(eori: Eori)(implicit hc: HeaderCarrier): Future[Unit] = {
-    if (FeatureSwitch.GetCompanyInfoFromMdg.isEnabled()) {} else {}
-    Future.successful()
   }
 
   def testSub21(eori: String)(implicit hc: HeaderCarrier, reads: HttpReads[HttpResponse], ec: ExecutionContext): Future[JsValue] = {

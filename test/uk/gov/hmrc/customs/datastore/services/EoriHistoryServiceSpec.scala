@@ -27,6 +27,7 @@ import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
+import uk.gov.hmrc.customs.datastore.domain.onwire._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
@@ -34,7 +35,7 @@ import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
 
-class ETMPServiceSpec extends FlatSpec with MustMatchers with MockitoSugar with DefaultAwaitTimeout with FutureAwaits {
+class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSugar with DefaultAwaitTimeout with FutureAwaits {
 
   protected def generateResponse(eoris:Seq[Eori]):HistoricEoriResponse = {
     HistoricEoriResponse(
@@ -67,7 +68,7 @@ class ETMPServiceSpec extends FlatSpec with MustMatchers with MockitoSugar with 
 
     val appConfig = new AppConfig(configuration,env)
     val mockHttp = mock[HttpClient]
-    val service = new ETMPService(appConfig, mockHttp)
+    val service = new EoriHistoryService(appConfig, mockHttp)
     implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
     implicit val hc: HeaderCarrier = HeaderCarrier()
   }

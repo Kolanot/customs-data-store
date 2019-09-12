@@ -19,13 +19,13 @@ package uk.gov.hmrc.customs.datastore.controllers
 import javax.inject.{Inject, Singleton}
 import play.api.mvc._
 import uk.gov.hmrc.auth.core.AuthorisedFunctions
-import uk.gov.hmrc.customs.datastore.services.{ETMPService, EoriStore}
+import uk.gov.hmrc.customs.datastore.services.{EoriHistoryService, EoriStore}
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.ExecutionContext
 
 @Singleton()
-class HistoricEoriController @Inject()(val authConnector: CustomAuthConnector, eoriStore: EoriStore, etmp: ETMPService)(implicit ec: ExecutionContext) extends BaseController with AuthorisedFunctions {
+class HistoricEoriController @Inject()(val authConnector: CustomAuthConnector, eoriStore: EoriStore, etmp: EoriHistoryService)(implicit ec: ExecutionContext) extends BaseController with AuthorisedFunctions {
 
   def mdgHistoricEori(eori: String) = Action.async { implicit req =>
     etmp.testSub21(eori).map(a => Ok(a))
