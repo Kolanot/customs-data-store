@@ -57,7 +57,7 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent, appConfig:AppC
 
   override val expireAfterSeconds: Long = appConfig.dbTimeToLive
 
-  override def additionalIndexes = Seq(
+  override def indexes = Seq(
     Index(Seq(EoriSearchKey -> IndexType.Ascending), name = Some(FieldEoriHistory + FieldEori + "Index"), unique = true, sparse = true)
   )
 
@@ -66,7 +66,7 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent, appConfig:AppC
     find(EoriSearchKey -> eori).map(_.headOption)
   }
 
-  def getLastUpdated() = LastUpdated -> toJsFieldJsValueWrapper(DateTime.now(DateTimeZone.UTC))(ReactiveMongoFormats.dateTimeWrite)
+  private def getLastUpdated() = FieldLastUpdated -> toJsFieldJsValueWrapper(DateTime.now(DateTimeZone.UTC))(ReactiveMongoFormats.dateTimeWrite)
 
   /*
   This method will overwrite the eoriHistory field, with the given EoriPeriods but leaves the other fields untouched

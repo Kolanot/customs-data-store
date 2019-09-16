@@ -18,8 +18,7 @@ package uk.gov.hmrc.customs.datastore.util
 
 import play.api.Logger
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONInteger, BSONLong, BSONString}
-import reactivemongo.core.commands.{BSONCommandResultMaker, Command, CommandError}
+import reactivemongo.bson.{BSONDocument, BSONLong}
 import uk.gov.hmrc.mongo.ReactiveRepository
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -28,32 +27,38 @@ trait TTLIndexing[A, ID] {
   self: ReactiveRepository[A, ID] =>
 
   val expireAfterSeconds: Long
-  def additionalIndexes: Seq[Index] = Seq.empty[Index]
 
-  protected val LastUpdated = "lastUpdated"
+  def indexes: Seq[Index] = Seq.empty[Index]
+
+  protected val FieldLastUpdated = "lastUpdated"
   private val LastUpdatedIndex = "lastUpdatedIndex"
   private val ExpireAfterSeconds = "expireAfterSeconds"
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
-    import reactivemongo.bson.DefaultBSONHandlers._
-    def findExpireSeconds(idx:Index):Long = idx.options.getAs[BSONLong](ExpireAfterSeconds).getOrElse(BSONLong(expireAfterSeconds)).as[Long]
-    collection.indexesManager.list()
-      .flatMap {
-          _.find(index => index.eventualName == LastUpdatedIndex && findExpireSeconds(index) != expireAfterSeconds)
-          .fold(ensureCustomIndexes(additionalIndexes)) { index =>
-          collection.indexesManager.drop(index.eventualName).flatMap(_ => ensureCustomIndexes(additionalIndexes))
-        }
-      }
-    Logger.info(s"Creating time to live for entries in ${collection.name} to $expireAfterSeconds seconds")  //TODO refactor
-    ensureCustomIndexes(additionalIndexes)  //TODO Why run this 3 times?
+    Logger.info(s"Creating time to live for entries in ${collection.name} to $expireAfterSeconds seconds")
+
+    for {
+      _ <- removeLastUpdatedIndexIfExpireAfterSecondsOptionChanged
+      results <- addLastUpdatedIndex(indexes)
+    } yield(results)
   }
 
-  private def ensureCustomIndexes(otherIndexes:Seq[Index] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
-    val lastUpdatedIndex =       Index(
-      key = Seq(LastUpdated -> IndexType.Ascending),
+  private def addLastUpdatedIndex(indexes: Seq[Index] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
+    val lastUpdatedIndex = Index(
+      key = Seq(FieldLastUpdated -> IndexType.Ascending),
       name = Some(LastUpdatedIndex),
       options = BSONDocument(ExpireAfterSeconds -> expireAfterSeconds)
     )
-    Future.sequence((lastUpdatedIndex +: otherIndexes).map(collection.indexesManager.ensure))
+    Future.sequence((lastUpdatedIndex +: indexes).map(collection.indexesManager.ensure))
+  }
+
+  private def removeLastUpdatedIndexIfExpireAfterSecondsOptionChanged()(implicit ec: ExecutionContext): Future[Unit] = {
+    def getExpireAfterSecondsOptionOf(idx: Index): Long = idx.options.getAs[BSONLong](ExpireAfterSeconds).getOrElse(BSONLong(expireAfterSeconds)).as[Long]
+
+    for {
+      indexes <- collection.indexesManager.list()
+      index = indexes.find(index => index.eventualName == LastUpdatedIndex && getExpireAfterSecondsOptionOf(index) != expireAfterSeconds) if index.isDefined
+      - <- collection.indexesManager.drop(index.get.eventualName)
+    } yield ()
   }
 }
