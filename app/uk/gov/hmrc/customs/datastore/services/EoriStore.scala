@@ -26,7 +26,6 @@ import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain.TraderData._
 import uk.gov.hmrc.customs.datastore.domain._
-import uk.gov.hmrc.customs.datastore.graphql.{EoriPeriodInput, InputEmail}
 import uk.gov.hmrc.customs.datastore.util.TTLIndexing
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -70,71 +69,72 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: App
   }
 
   def updateHistoricEoris(eoriHistories: Seq[EoriPeriod]): Future[Any] = {
-    val eoriHistoryJson = FieldEoriHistory -> toJsFieldJsValueWrapper(eoriHistories)
+    val eoriHistoryChangeSet = FieldEoriHistory -> toJsFieldJsValueWrapper(eoriHistories)
     findAndUpdate(
       query = Json.obj(EoriSearchKey -> Json.obj("$in" -> eoriHistories.map(_.eori))),
-      update = Json.obj("$set" -> Json.obj(getLastUpdated(), eoriHistoryJson)),
+      update = Json.obj("$set" -> Json.obj(lastUpdatedChangeSet(), eoriHistoryChangeSet)),
       upsert = true
     )
   }
 
-  def upsertByEori(eoriPeriodInput: EoriPeriodInput, email: Option[InputEmail]): Future[Boolean] = {
-    findByEori(eoriPeriodInput.eori).flatMap {
-      case Some(traderData) => updateTraderData(eoriPeriodInput, email)
-      case None => insertTraderData(eoriPeriodInput, email)
+  def upsertByEori(eoriPeriod: EoriPeriod, email: Option[NotificationEmail]): Future[Boolean] = {
+    findByEori(eoriPeriod.eori).flatMap {
+      case Some(traderData) => updateTraderData(eoriPeriod, email)
+      case None => insertTraderData(eoriPeriod, email)
     }.map(_.lastError.flatMap(_.err).isEmpty)
   }
 
-  private def getLastUpdated() = FieldLastUpdated -> toJsFieldJsValueWrapper(DateTime.now(DateTimeZone.UTC))(ReactiveMongoFormats.dateTimeWrite)
+  private def lastUpdatedChangeSet() = FieldLastUpdated -> toJsFieldJsValueWrapper(DateTime.now(DateTimeZone.UTC))(ReactiveMongoFormats.dateTimeWrite)
 
-  private def emailChangeSet(email: Option[InputEmail]) = {
+  private def emailChangeSet(email: Option[NotificationEmail]) = {
     Seq(
       (EmailAddressSearchKey -> email.flatMap(_.address)),
       (EmailTimestampSearchKey -> email.flatMap(_.timestamp))
     ).collect { case (field, Some(value)) => (field -> toJsFieldJsValueWrapper(value)) }
   }
 
-  private def eoriHistoryChangeSet(eoriPeriodInput: EoriPeriodInput) = {
+  private def eoriPeriodChangeSet(eoriPeriod: EoriPeriod) = {
     Seq(
-      FieldEori -> Some(eoriPeriodInput.eori),
-      FieldEoriValidFrom -> eoriPeriodInput.validFrom,
-      FieldEoriValidUntil -> eoriPeriodInput.validUntil
+      FieldEori -> Some(eoriPeriod.eori),
+      FieldEoriValidFrom -> eoriPeriod.validFrom,
+      FieldEoriValidUntil -> eoriPeriod.validUntil
     ).collect { case (field, Some(value)) => (field -> toJsFieldJsValueWrapper(value))}
   }
 
-  private def updateEoriHistory(eoriPeriodInput: EoriPeriodInput) = {
-    val allEoriUpdates = eoriHistoryChangeSet(eoriPeriodInput).map(eu => (FieldEoriHistory + ".$[x]." + eu._1 -> eu._2))
+  private def updateElementInEoriHistory(eoriPeriod: EoriPeriod) = {
+    val eoriPeriodInEoryHistory = eoriPeriodChangeSet(eoriPeriod).map(eoriPeriodField => (FieldEoriHistory + ".$[x]." + eoriPeriodField._1 -> eoriPeriodField._2))
     findAndUpdate(
-      query = Json.obj(EoriSearchKey -> eoriPeriodInput.eori),
-      update = Json.obj("$set" -> Json.obj(allEoriUpdates: _*)),
+      query = Json.obj(EoriSearchKey -> eoriPeriod.eori),
+      update = Json.obj("$set" -> Json.obj(eoriPeriodInEoryHistory: _*)),
       upsert = true,
-      arrayFilters = Seq(Json.obj(s"x.$FieldEori" -> eoriPeriodInput.eori))
+      arrayFilters = Seq(Json.obj(s"x.$FieldEori" -> eoriPeriod.eori))
     )
   }
 
-  private def updateEmailAndLastUpdated(eoriPeriodInput: EoriPeriodInput, email: Option[InputEmail]) = {
-    val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(getLastUpdated +: emailChangeSet(email): _*)))
+  private def updateEmailAndLastUpdated(eori: Eori, email: Option[NotificationEmail]) = {
+    val updateSet = ("$set" -> toJsFieldJsValueWrapper(Json.obj(lastUpdatedChangeSet +: emailChangeSet(email): _*)))
     findAndUpdate(
-      query = Json.obj(EoriSearchKey -> eoriPeriodInput.eori),
+      query = Json.obj(EoriSearchKey -> eori),
       update = Json.obj(updateSet),
       upsert = true
     )
   }
 
-  private def insertTraderData(eoriPeriodInput: EoriPeriodInput, email: Option[InputEmail]) = {
-    val eoriUpdates = FieldEoriHistory -> toJsFieldJsValueWrapper(Json.arr(Json.obj(eoriHistoryChangeSet(eoriPeriodInput): _*)))
-    val changeSet = Json.obj(getLastUpdated +: eoriUpdates +: emailChangeSet(email): _*)
+  private def insertTraderData(eoriPeriod: EoriPeriod, email: Option[NotificationEmail]) = {
+    val eoriHistoryChangeSet = FieldEoriHistory -> toJsFieldJsValueWrapper(Json.arr(Json.obj(eoriPeriodChangeSet(eoriPeriod): _*)))
+    val changeSet = Json.obj(lastUpdatedChangeSet +: eoriHistoryChangeSet +: emailChangeSet(email): _*)
     findAndUpdate(
-      query = Json.obj(EoriSearchKey -> eoriPeriodInput.eori),
+      query = Json.obj(EoriSearchKey -> eoriPeriod.eori),
       update = Json.obj("$set" -> changeSet),
       upsert = true
     )
   }
 
-  private def updateTraderData(eoriPeriodInput: EoriPeriodInput, email: Option[InputEmail]) = {
-    updateEoriHistory(eoriPeriodInput).flatMap { otherQuery =>
-      updateEmailAndLastUpdated(eoriPeriodInput, email)
-    }
+  private def updateTraderData(eoriPeriod: EoriPeriod, email: Option[NotificationEmail]) = {
+    for {
+      _ <- updateElementInEoriHistory(eoriPeriod)
+      result <- updateEmailAndLastUpdated(eoriPeriod.eori, email)
+    } yield result
   }
 
 }

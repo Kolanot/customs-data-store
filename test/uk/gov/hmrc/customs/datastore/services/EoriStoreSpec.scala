@@ -22,7 +22,6 @@ import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
-import uk.gov.hmrc.customs.datastore.graphql.{EoriPeriodInput, InputEmail}
 import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -110,7 +109,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     "Complex email upsert test with preloaded data" in {
       val emails = Option(NotificationEmail(Option("a.b@mail.com"), None))
       await(for {
-        _ <- eoriStore.upsertByEori(EoriPeriodInput(period1.eori, None,None),Some(InputEmail(Some("a.b@mail.com"),None)))
+        _ <- eoriStore.upsertByEori(EoriPeriod(period1.eori, None,None),Some(NotificationEmail(Some("a.b@mail.com"),None)))
         _ <- eoriStore.updateHistoricEoris(Seq(period1, period2))
         _ <- eoriStore.updateHistoricEoris(Seq(period5, period6))
         eoris1 <- eoriStore.findByEori(period1.eori)
@@ -138,7 +137,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
   "upsertByEori" should {
 
     "insert eori" in {
-      val eoriPeriod = EoriPeriodInput(eori1, None, None)
+      val eoriPeriod = EoriPeriod(eori1, None, None)
       val traderData1 = TraderData(Seq(EoriPeriod(eori1, None, None)), None)
 
       await(for {
@@ -149,7 +148,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     }
 
     "insert eori with validFrom and validUntil " in {
-      val eoriPeriod = EoriPeriodInput(eori1, Some("date1"), Some("date2"))
+      val eoriPeriod = EoriPeriod(eori1, Some("date1"), Some("date2"))
       val expected = TraderData(Seq(EoriPeriod(eori1, Some("date1"), Some("date2"))), None)
 
       await(for {
@@ -161,7 +160,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
 
     "saveEoris methods should not remove any existing data" in {
       await(for {
-        _ <- eoriStore.upsertByEori(EoriPeriodInput(eori1, None, None), Some(InputEmail(Some("test@email.uk"), Some("timestamp"))))
+        _ <- eoriStore.upsertByEori(EoriPeriod(eori1, None, None), Some(NotificationEmail(Some("test@email.uk"), Some("timestamp"))))
         r1 <- eoriStore.findByEori(eori1)
         _ <- toFuture(r1.get mustBe TraderData(Seq(EoriPeriod(eori1, None, None)), Some(NotificationEmail(Some("test@email.uk"), Some("timestamp")))))
         _ <- eoriStore.updateHistoricEoris(Seq(EoriPeriod(eori1,Some("from"),Some("to"))))
@@ -175,7 +174,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
         _ <- eoriStore.updateHistoricEoris(Seq(EoriPeriod(eori1,Some("from1"),Some("to1")),EoriPeriod(eori2,Some("from2"),Some("to2"))))
         r2 <- eoriStore.findByEori(eori1)
         _ <- toFuture(r2.get mustBe TraderData(Seq(EoriPeriod(eori1, Some("from1"), Some("to1")),EoriPeriod(eori2, Some("from2"), Some("to2"))), None))
-        _ <- eoriStore.upsertByEori(EoriPeriodInput(eori1, None, None), Some(InputEmail(Some("test@email.uk"), Some("timestamp"))))
+        _ <- eoriStore.upsertByEori(EoriPeriod(eori1, None, None), Some(NotificationEmail(Some("test@email.uk"), Some("timestamp"))))
         r1 <- eoriStore.findByEori(eori1)
         _ <- toFuture(r1.get mustBe TraderData(Seq(EoriPeriod(eori1, Some("from1"), Some("to1")),EoriPeriod(eori2, Some("from2"), Some("to2"))), Some(NotificationEmail(Some("test@email.uk"), Some("timestamp")))))
       } yield ())
@@ -184,31 +183,31 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
   }
 
     "insert eori with notification email and timestamp " in {
-      val eoriPeriod = EoriPeriodInput(eori1, Some("date1"), Some("date2"))
-      val inputEmail = InputEmail(Some("test@email.uk"), Some("timestamp"))
+      val eoriPeriod = EoriPeriod(eori1, Some("date1"), Some("date2"))
+      val email = NotificationEmail(Some("test@email.uk"), Some("timestamp"))
       val expected = TraderData(Seq(EoriPeriod(eori1, Some("date1"), Some("date2"))), Some(NotificationEmail(Some("test@email.uk"), Some("timestamp"))))
 
       await(for {
-        _ <- eoriStore.upsertByEori(eoriPeriod, Some(inputEmail))
+        _ <- eoriStore.upsertByEori(eoriPeriod, Some(email))
         r1 <- eoriStore.findByEori(eori1)
         _ <- toFuture(r1.get mustBe expected)
       } yield ())
     }
 
     "upsert the validFrom, validUntil, email and timestamp fields " in {
-      val eoriPeriod = EoriPeriodInput(eori1, Some("date1"), Some("date2"))
-      val inputEmail = InputEmail(Some("original@email.uk"), Some("timestamp1"))
+      val eoriPeriod = EoriPeriod(eori1, Some("date1"), Some("date2"))
+      val email = NotificationEmail(Some("original@email.uk"), Some("timestamp1"))
       val expectedTraderDataAfterInsert = TraderData(Seq(EoriPeriod(eori1, Some("date1"), Some("date2"))), Some(NotificationEmail(Some("original@email.uk"), Some("timestamp1"))))
 
-      val updatedEoriPeriod = EoriPeriodInput(eori1, Some("date3"), Some("date4"))
-      val updatedInputEmail = InputEmail(Some("updated@email.uk"), Some("timestamp2"))
+      val updatedEoriPeriod = EoriPeriod(eori1, Some("date3"), Some("date4"))
+      val updatedEmail = NotificationEmail(Some("updated@email.uk"), Some("timestamp2"))
       val expectedTraderDataAfterUpdate = TraderData(Seq(EoriPeriod(eori1, Some("date3"), Some("date4"))), Some(NotificationEmail(Some("updated@email.uk"), Some("timestamp2"))))
 
       await(for {
-        _ <- eoriStore.upsertByEori(eoriPeriod, Some(inputEmail))
+        _ <- eoriStore.upsertByEori(eoriPeriod, Some(email))
         insertedTraderData <- eoriStore.findByEori(eori1)
         _ <- toFuture(insertedTraderData.get mustBe expectedTraderDataAfterInsert)
-        _ <- eoriStore.upsertByEori(updatedEoriPeriod, Some(updatedInputEmail))
+        _ <- eoriStore.upsertByEori(updatedEoriPeriod, Some(updatedEmail))
         updatedTraderData <- eoriStore.findByEori(eori1)
         _ <- toFuture(updatedTraderData.get mustBe expectedTraderDataAfterUpdate)
       } yield ())

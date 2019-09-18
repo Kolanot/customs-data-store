@@ -41,7 +41,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService)
 
   val log: LoggerLike = Logger(this.getClass)
 
-  val NotificationEmail = "notificationEmail"
+  val FieldNotificationEmail = "notificationEmail"
   val Address = "address"
   val FieldTimestamp = "timestamp"
   val EoriField = "eoriHistory"
@@ -50,16 +50,16 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService)
   implicit val EmailType: ObjectType[Unit, NotificationEmail] = deriveObjectType[Unit, NotificationEmail](ObjectTypeName("Email"))
   implicit val TraderDataType: ObjectType[Unit, TraderData] = deriveObjectType[Unit, TraderData](ObjectTypeName("TraderData"))
 
-  implicit val InputEmailType:InputObjectType[InputEmail] = deriveInputObjectType[InputEmail]()
-  implicit val InputEmailUnmarshaller: FromInput[InputEmail] = inputUnmarshaller {
-    input => InputEmail(
+  implicit val InputEmailType:InputObjectType[NotificationEmail] = deriveInputObjectType[NotificationEmail]()
+  implicit val InputEmailUnmarshaller: FromInput[NotificationEmail] = inputUnmarshaller {
+    input => NotificationEmail(
       address = input.get(Address).flatMap(_.asInstanceOf[Option[EmailAddress]]),
       timestamp = input.get(FieldTimestamp).flatMap(_.asInstanceOf[Option[Timestamp]])
     )
   }
-  implicit val InputEoriPeriodType:InputObjectType[EoriPeriodInput] = deriveInputObjectType[EoriPeriodInput]()
+  implicit val InputEoriPeriodType:InputObjectType[EoriPeriod] = deriveInputObjectType[EoriPeriod]()
   implicit val InputEoriPeriodTypeUnmarshaller = inputUnmarshaller({
-    input => EoriPeriodInput(
+    input => EoriPeriod(
       eori = input("eori").asInstanceOf[Eori],
       validFrom = input.get("validFrom").flatMap(_.asInstanceOf[Option[String]]),
       validUntil = input.get("validUntil").flatMap(_.asInstanceOf[Option[String]])
@@ -109,11 +109,11 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService)
       fieldType = BooleanType,
       arguments = List(
         Argument(EoriField, InputEoriPeriodType),
-        Argument(NotificationEmail, OptionInputType(InputEmailType))
+        Argument(FieldNotificationEmail, OptionInputType(InputEmailType))
       ),
       resolve = ctx => {
-        val email = ctx.args.raw.get(NotificationEmail).flatMap(_.asInstanceOf[Option[InputEmail]])
-        val eori = ctx.args.raw(EoriField).asInstanceOf[EoriPeriodInput]
+        val email = ctx.args.raw.get(FieldNotificationEmail).flatMap(_.asInstanceOf[Option[NotificationEmail]])
+        val eori = ctx.args.raw(EoriField).asInstanceOf[EoriPeriod]
         implicit val hc = HeaderCarrier()
         val eventualEoriHistory = etmp.getHistory(eori.eori)
 

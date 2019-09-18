@@ -31,7 +31,7 @@ import play.api.{Configuration, Environment}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
-import uk.gov.hmrc.customs.datastore.graphql.{EoriPeriodInput, GraphQL, InputEmail, TraderDataSchema}
+import uk.gov.hmrc.customs.datastore.graphql.{GraphQL, TraderDataSchema}
 import uk.gov.hmrc.customs.datastore.services.{EoriHistoryService, EoriStore, MongoSpecSupport, ServerTokenAuthorization}
 import uk.gov.hmrc.mongo.MongoConnector
 
@@ -128,9 +128,9 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
       result must include("data")
       result mustNot include("errors")
-      val eoriPeriod = EoriPeriodInput(testEori, Some(testValidFrom), Some(testValidUntil))
-      val inputEmail = InputEmail(Some(testEmail), Some(testTimestamp))
-      verify(mockEoriStore).upsertByEori(eoriPeriod, Some(inputEmail))
+      val eoriPeriod = EoriPeriod(testEori, Some(testValidFrom), Some(testValidUntil))
+      val email = NotificationEmail(Some(testEmail), Some(testTimestamp))
+      verify(mockEoriStore).upsertByEori(eoriPeriod, Some(email))
     }
 
     "Insert an EORI with no email address" in new GraphQLScenario() {
@@ -142,7 +142,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
       result must include("data")
       result mustNot include("errors")
-      val eoriPeriod = EoriPeriodInput(testEori, Some(testValidFrom), Some(testValidUntil))
+      val eoriPeriod = EoriPeriod(testEori, Some(testValidFrom), Some(testValidUntil))
       verify(mockEoriStore).upsertByEori(eoriPeriod, None)
     }
 
