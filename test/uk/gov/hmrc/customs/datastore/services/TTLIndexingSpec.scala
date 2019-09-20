@@ -26,6 +26,7 @@ import uk.gov.hmrc.mongo.{MongoConnector, ReactiveRepository}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.Future.successful
 
 class TTLIndexingSpec extends WordSpec with MustMatchers with FutureAwaits with DefaultAwaitTimeout {
 
@@ -52,19 +53,17 @@ class TTLIndexingSpec extends WordSpec with MustMatchers with FutureAwaits with 
   val ExtraIndexName = "theIndex"
   val DefaultIndexName = "_id_"
 
-
-  def toFuture(condition: Assertion) = Future.successful(condition)
-
+  
   "MongoTTL" should {
     "add all the indexes on first use" in {
       val mongoConnectorForTest: MongoConnector = MongoConnector("mongodb://127.0.0.1:27017/test-ttl")
       val testDb =
 
       await(for {
-        testDb <- Future.successful(new MongoTTL(mongoConnectorForTest))
-        _ <- Future.successful(Thread.sleep(300))  //Mongodb needs a bit of time to add the indexes
+        testDb <- successful(new MongoTTL(mongoConnectorForTest))
+        _ <- successful(Thread.sleep(300))  //Mongodb needs a bit of time to add the indexes
         indexes <- testDb.collection.indexesManager.list()
-        _ <- toFuture(indexes.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex",ExtraIndexName))
+        _ <- successful(indexes.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex",ExtraIndexName))
         _ <- testDb.drop
       } yield ())
     }
@@ -73,16 +72,16 @@ class TTLIndexingSpec extends WordSpec with MustMatchers with FutureAwaits with 
       val mongoConnectorForTest: MongoConnector = MongoConnector("mongodb://127.0.0.1:27017/test-ttl")
 
       await(for {
-        testDb1 <- Future.successful(new MongoTTL(mongoConnectorForTest,10))
-        _ <- Future.successful(Thread.sleep(500))  //Mongodb needs a bit of time to add the indexes
+        testDb1 <- successful(new MongoTTL(mongoConnectorForTest,10))
+        _ <- successful(Thread.sleep(500))  //Mongodb needs a bit of time to add the indexes
         indexes1 <- testDb1.collection.indexesManager.list()
-        _ <- toFuture(indexes1.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex",ExtraIndexName))
-        _ <- toFuture( indexes1.find(index => index.eventualName == "lastUpdatedIndex").map(testDb1.getExpireAfterSecondsOptionOf) mustBe Some(10))
-        testDb2 <- Future.successful(new MongoTTL(mongoConnectorForTest,10))
-        _ <- Future.successful(Thread.sleep(500))  //Mongodb needs a bit of time to add the indexes
+        _ <- successful(indexes1.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex",ExtraIndexName))
+        _ <- successful( indexes1.find(index => index.eventualName == "lastUpdatedIndex").map(testDb1.getExpireAfterSecondsOptionOf) mustBe Some(10))
+        testDb2 <- successful(new MongoTTL(mongoConnectorForTest,10))
+        _ <- successful(Thread.sleep(500))  //Mongodb needs a bit of time to add the indexes
         indexes2 <- testDb2.collection.indexesManager.list()
-        _ <- toFuture(indexes2.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex",ExtraIndexName))
-        _ <- toFuture( indexes2.find(index => index.eventualName == "lastUpdatedIndex").map(testDb2.getExpireAfterSecondsOptionOf) mustBe Some(10))
+        _ <- successful(indexes2.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex",ExtraIndexName))
+        _ <- successful( indexes2.find(index => index.eventualName == "lastUpdatedIndex").map(testDb2.getExpireAfterSecondsOptionOf) mustBe Some(10))
         _ <- testDb1.drop
         _ <- testDb2.drop
       } yield ())
@@ -92,16 +91,16 @@ class TTLIndexingSpec extends WordSpec with MustMatchers with FutureAwaits with 
       val mongoConnectorForTest: MongoConnector = MongoConnector("mongodb://127.0.0.1:27017/test-ttl")
 
       await(for {
-        testDb1 <- Future.successful(new MongoTTL(mongoConnectorForTest,10))
-        _ <- Future.successful(Thread.sleep(500))  //Mongodb needs a bit of time to add the indexes
+        testDb1 <- successful(new MongoTTL(mongoConnectorForTest,10))
+        _ <- successful(Thread.sleep(500))  //Mongodb needs a bit of time to add the indexes
         indexes1 <- testDb1.collection.indexesManager.list()
-        _ <- toFuture(indexes1.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex",ExtraIndexName))
-        _ <- toFuture( indexes1.find(index => index.eventualName == "lastUpdatedIndex").map(testDb1.getExpireAfterSecondsOptionOf) mustBe Some(10))
-        testDb2 <- Future.successful(new MongoTTL(mongoConnectorForTest,20))
-        _ <- Future.successful(Thread.sleep(500))  //Mongodb needs a bit of time to add the indexes
+        _ <- successful(indexes1.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex",ExtraIndexName))
+        _ <- successful( indexes1.find(index => index.eventualName == "lastUpdatedIndex").map(testDb1.getExpireAfterSecondsOptionOf) mustBe Some(10))
+        testDb2 <- successful(new MongoTTL(mongoConnectorForTest,20))
+        _ <- successful(Thread.sleep(500))  //Mongodb needs a bit of time to add the indexes
         indexes2 <- testDb2.collection.indexesManager.list()
-        _ <- toFuture(indexes2.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex",ExtraIndexName))
-        _ <- toFuture( indexes2.find(index => index.eventualName == "lastUpdatedIndex").map(testDb2.getExpireAfterSecondsOptionOf) mustBe Some(20))
+        _ <- successful(indexes2.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex",ExtraIndexName))
+        _ <- successful( indexes2.find(index => index.eventualName == "lastUpdatedIndex").map(testDb2.getExpireAfterSecondsOptionOf) mustBe Some(20))
         _ <- testDb1.drop
         _ <- testDb2.drop
       } yield ())
