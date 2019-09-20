@@ -51,13 +51,11 @@ class TTLIndexingSpec extends WordSpec with MustMatchers with FutureAwaits with 
       Index(Seq("someFieldName" -> IndexType.Ascending), name = Some(ExtraIndexName), unique = true, sparse = true))
 
     @tailrec
-    final def waitForIndexes(expectedIndexNames:List[String], expectedExpireAfterSeconds: Int, tryCount:Int = 200): Future[List[Index]] = {
-      println("waitForIndexes: "+ tryCount)
+    final def waitForIndexes(expectedIndexNames:List[String], expectedExpireAfterSeconds: Int, tryCount:Int = 100): Future[List[Index]] = {
       val indexes = await(collection.indexesManager.list())
       if (tryCount > 0) {
         val actualIndexNames = indexes.map(_.eventualName).sorted
         val actualExpireAfterSeconds = indexes.find(index => index.eventualName == "lastUpdatedIndex").map(getExpireAfterSecondsOptionOf)
-        println(s"$actualIndexNames   Exp: $actualExpireAfterSeconds")
         if (actualIndexNames == expectedIndexNames && actualExpireAfterSeconds == Some(expectedExpireAfterSeconds)) {
           Future.successful(indexes)
         } else {
