@@ -22,7 +22,7 @@ import play.api.libs.json.Json
 import play.api.libs.json.Json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
+import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain.TraderData._
 import uk.gov.hmrc.customs.datastore.domain._
@@ -63,14 +63,13 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: App
   )
 
   def findByEori(eori: Eori): Future[Option[TraderData]] = {
-    val selector = BSONDocument(EoriSearchKey -> eori)
     find(EoriSearchKey -> eori).map(_.headOption)
   }
 
-  def updateHistoricEoris(eoriHistories: Seq[EoriPeriod]): Future[Any] = {
-    val eoriHistoryChangeSet = FieldEoriHistory -> toJsFieldJsValueWrapper(eoriHistories)
+  def updateHistoricEoris(eoriHistory: Seq[EoriPeriod]): Future[Any] = {
+    val eoriHistoryChangeSet = FieldEoriHistory -> toJsFieldJsValueWrapper(eoriHistory)
     findAndUpdate(
-      query = Json.obj(EoriSearchKey -> Json.obj("$in" -> eoriHistories.map(_.eori))),
+      query = Json.obj(EoriSearchKey -> Json.obj("$in" -> eoriHistory.map(_.eori))),
       update = Json.obj("$set" -> Json.obj(lastUpdatedChangeSet(), eoriHistoryChangeSet)),
       upsert = true
     )
@@ -101,10 +100,10 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: App
   }
 
   private def updateElementInEoriHistory(eoriPeriod: EoriPeriod) = {
-    val eoriPeriodInEoryHistory = eoriPeriodChangeSet(eoriPeriod).map(eoriPeriodField => (FieldEoriHistory + ".$[x]." + eoriPeriodField._1 -> eoriPeriodField._2))
+    val eoriPeriodInEoriHistory = eoriPeriodChangeSet(eoriPeriod).map(eoriPeriodField => (FieldEoriHistory + ".$[x]." + eoriPeriodField._1 -> eoriPeriodField._2))
     findAndUpdate(
       query = Json.obj(EoriSearchKey -> eoriPeriod.eori),
-      update = Json.obj("$set" -> Json.obj(eoriPeriodInEoryHistory: _*)),
+      update = Json.obj("$set" -> Json.obj(eoriPeriodInEoriHistory: _*)),
       upsert = true,
       arrayFilters = Seq(Json.obj(s"x.$FieldEori" -> eoriPeriod.eori))
     )

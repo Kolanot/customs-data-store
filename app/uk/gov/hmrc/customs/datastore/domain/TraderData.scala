@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.customs.datastore.domain
 
-import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.Json
 
 case class EoriPeriod(eori: Eori,

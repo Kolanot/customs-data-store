@@ -54,7 +54,7 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
   def graphqlBody(): Action[JsValue] = serverAuth.async(parse.json) {
     implicit request: Request[JsValue] =>
 
-      log.warn("GraphQL Request: " + request)
+      log.info("GraphQL Request: " + request)
 
         val extract: JsValue => (String, Option[String], Option[JsObject]) = query => (
           (query \ "query").as[String],

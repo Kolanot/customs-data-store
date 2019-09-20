@@ -77,22 +77,22 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService)
       resolve = sangriaContext => {
         implicit val hc = HeaderCarrier()
         val eori = sangriaContext.args.arg[String]("eori")
-        val eventualTradarData = eoriStore.findByEori(eori)
+        val eventualTraderData = eoriStore.findByEori(eori)
 
-        val isHisricEoriLoaded = eventualTradarData.map( a => a.map(b => b.eoriHistory.headOption.find( c => c.validFrom.isEmpty && c.validUntil.isEmpty).isDefined ).getOrElse(true))
-        val isHistoricEoriQueried = sangriaContext.astFields.flatMap(_.selections).map(_.renderPretty).find(_.contains("eoriHistory")).isDefined
-        isHisricEoriLoaded.flatMap { mustRequest =>
-          log.warn(s"Query 'byEori' cache status - isHisricEoriLoaded : $mustRequest , isHistoricEoriQueried: $isHistoricEoriQueried")
+        val isHistoricEoriLoaded = eventualTraderData.map(_.map(_.eoriHistory.headOption.exists(c => c.validFrom.isEmpty && c.validUntil.isEmpty)).getOrElse(true))
+        val isHistoricEoriQueried = sangriaContext.astFields.flatMap(_.selections).map(_.renderPretty).exists(_.contains("eoriHistory"))
+        isHistoricEoriLoaded.flatMap { mustRequest =>
+          log.info(s"Query 'byEori' cache status - isHistoricEoriLoaded : $mustRequest , isHistoricEoriQueried: $isHistoricEoriQueried")
           (mustRequest && isHistoricEoriQueried) match {
             case true =>
               for {
                 eoriHistory <- etmp.getHistory(eori)
-                _ <- Future.successful(log.warn("Query 'byEori' request result - EoriHistory length: " + eoriHistory.length))
+                _ <- Future.successful(log.info("Query 'byEori' request result - EoriHistory length: " + eoriHistory.length))
                 _ <- eoriStore.updateHistoricEoris(eoriHistory)
                 traderData <- eoriStore.findByEori(eori)
               } yield traderData
             case false =>
-              eventualTradarData
+              eventualTraderData
           }
         }
       }
@@ -119,7 +119,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService)
 
         for {
           result <- eoriStore.upsertByEori(eori,email)
-          _ <- Future.successful(log.warn(s"Mutation 'byEori' request result: $result"))
+          _ <- Future.successful(log.info(s"Mutation 'byEori' request result: $result"))
           eoriHistory <- eventualEoriHistory
           _ <- eoriStore.updateHistoricEoris(eoriHistory)
         } yield result

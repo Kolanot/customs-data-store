@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.customs.datastore.services
 
-import play.api.Logger
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONLong}
 import uk.gov.hmrc.mongo.ReactiveRepository
@@ -39,7 +38,7 @@ trait TTLIndexing[A, ID] {
   protected val ExpireAfterSeconds = "expireAfterSeconds"
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
-    Logger.info(s"Creating time to live for entries in ${collection.name} to $expireAfterSeconds seconds")
+    logger.info(s"Creating time to live for entries in ${collection.name} to $expireAfterSeconds seconds")
     for {
       currentIndexes <- collection.indexesManager.list()
       _ <- deleteLastUpdatedIndex(currentIndexes)
