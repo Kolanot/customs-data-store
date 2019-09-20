@@ -24,7 +24,7 @@ import uk.gov.hmrc.mongo.MongoConnector
 
 trait MongoSpecSupport {
 
-  protected def mongoUri: String = s"mongodb://127.0.0.1:27017/test-customs-data-store"
+  protected def mongoUri: String = "mongodb://127.0.0.1:27017/test-customs-data-store"
 
   implicit val mongoConnectorForTest: MongoConnector = MongoConnector(mongoUri)
 
