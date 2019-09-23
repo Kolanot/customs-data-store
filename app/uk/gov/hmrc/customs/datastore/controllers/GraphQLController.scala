@@ -36,8 +36,8 @@ import scala.util.{Failure, Success, Try}
 /**
   * Creates an `Action` to handle HTTP requests.
   *
+  * @param serverAuth       ActionBuilder for handling auth on incoming requests
   * @param graphQL          an object containing a graphql schema of the entire application
-  * @param cc               base controller components dependencies that most controllers rely on.
   * @param executionContext execute program logic asynchronously, typically but not necessarily on a thread pool
   */
 @Singleton
@@ -47,54 +47,53 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
   val log: LoggerLike = Logger(this.getClass)
   
   /**
-    * Parses graphql body of incoming request.
+    * Handles an incoming GraphQL query, and returns any result.
     *
-    * @return an 'Action' to handles a request and generates a result to be sent to the client
+    * @return an 'Action' to handle a request and generate a result to be sent to the client
     */
-  def graphqlBody(): Action[JsValue] = serverAuth.async(parse.json) {
+  def handleQuery(): Action[JsValue] = serverAuth.async(parse.json) {
     implicit request: Request[JsValue] =>
 
-      log.info("GraphQL Request: " + request)
-
-        val extract: JsValue => (String, Option[String], Option[JsObject]) = query => (
-          (query \ "query").as[String],
-          (query \ "operationName").asOpt[String],
-          (query \ "variables").toOption.flatMap {
-            case JsString(vars) => Some(parseVariables(vars))
-            case obj: JsObject => Some(obj)
-            case _ => None
-          }
-        )
-
-        val maybeQuery: Try[(String, Option[String], Option[JsObject])] = Try {
-          request.body match {
-            case arrayBody@JsArray(_) => extract(arrayBody.value(0))
-            case objectBody@JsObject(_) => extract(objectBody)
-            case otherType =>
-              throw new Error {
-                s"/graphQL endpoint does not support request body of type [${otherType.getClass.getSimpleName}]"
-              }
-          }
+      val extract: JsValue => (String, Option[String], Option[JsObject]) = query => (
+        (query \ "query").as[String],
+        (query \ "operationName").asOpt[String],
+        (query \ "variables").toOption.flatMap {
+          case JsString(vars) => Some(parseVariables(vars))
+          case obj: JsObject => Some(obj)
+          case _ => None
         }
+      )
 
-        maybeQuery match {
-          case Success((query, operationName, variables)) => executeQuery(query, variables, operationName)
-          case Failure(error) => Future.successful {
-            log.error(s"graphQL query parsing error: ${error.getMessage}")
-            BadRequest(json.JsObject(Map(
-              "ErrorMessage" ->  JsString(error.getMessage),
-              "Stack" -> JsString(error.getStackTrace.mkString(" "))))
-            )
-          }
+      // TODO consider creating a GraphQLQuery type
+      val maybeQuery: Try[(String, Option[String], Option[JsObject])] = Try {
+        request.body match {
+          case arrayBody@JsArray(_) => extract(arrayBody.value.head)
+          case objectBody@JsObject(_) => extract(objectBody)
+          case otherType =>
+            throw new Error {
+              s"/graphQL endpoint does not support request body of type [${otherType.getClass.getSimpleName}]"
+            }
         }
+      }
+
+      maybeQuery match {
+        case Success((query, operationName, variables)) => executeQuery(query, variables, operationName)
+        case Failure(error) => Future.successful {
+          log.error(s"graphQL query parsing error: ${error.getMessage}")
+          BadRequest(json.JsObject(Map(
+            "ErrorMessage" ->  JsString(error.getMessage),
+            "Stack" -> JsString(error.getStackTrace.mkString(" "))))
+          )
+        }
+      }
   }
 
   /**
     * Analyzes and executes incoming graphql query, and returns execution result.
     *
-    * @param query     graphql body of request
-    * @param variables incoming variables passed in the request
-    * @param operation name of the operation (queries or mutations)
+    * @param query     an unvalidated GraphQL query string
+    * @param variables any GraphQL query variables passed in the request
+    * @param operation name of the GraphQL operation (queries or mutations)
     * @return simple result, which defines the response header and a body ready to send to the client
     */
   def executeQuery(query: String, variables: Option[JsObject] = None, operation: Option[String] = None): Future[Result] = {
@@ -119,7 +118,7 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
     * @param variables variables from incoming query
     * @return JsObject with variables
     */
-  def parseVariables(variables: String): JsObject = if (variables.trim.isEmpty || variables.trim == "null") Json.obj()
-  else Json.parse(variables).as[JsObject]
+  def parseVariables(variables: String): JsObject =
+    if (variables.trim.isEmpty || variables.trim == "null") Json.obj() else Json.parse(variables).as[JsObject]
 }
 

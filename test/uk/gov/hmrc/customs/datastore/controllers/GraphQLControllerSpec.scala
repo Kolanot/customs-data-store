@@ -70,8 +70,8 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val eoriNumber: Eori = "GB12345678"
       val query = s"""{ "query": "query { byEori( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
       val unauthorizedRequest = FakeRequest(POST, "/graphql").withHeaders("Content-Type" -> "application/json").withBody(Json.parse(query))
-      val respone = controller.graphqlBody.apply(unauthorizedRequest)
-      status(respone) mustBe UNAUTHORIZED
+      val response = controller.handleQuery.apply(unauthorizedRequest)
+      status(response) mustBe UNAUTHORIZED
     }
 
     "Return trader's email for a given Eori" in new GraphQLScenario() {
@@ -83,7 +83,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       when(mockEoriStore.findByEori(any())).thenReturn(Future.successful(Some(traderData)))
       val query = s"""{ "query": "query { byEori( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
       val request = authorizedRequest.withBody(Json.parse(query))
-      val result = contentAsString(controller.graphqlBody.apply(request))
+      val result = contentAsString(controller.handleQuery.apply(request))
       result must include("data")
       result mustNot include("errors")
 
@@ -110,7 +110,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
       val query = s"""{ "query": "query { byEori( eori: \\"$eoriNumber\\") { notificationEmail { address }  } }"}"""
       val request = authorizedRequest.withBody(Json.parse(query))
-      val result = contentAsString(controller.graphqlBody.apply(request))
+      val result = contentAsString(controller.handleQuery.apply(request))
       result must include("data")
       result mustNot include("errors")
 
@@ -124,7 +124,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
       val query = s"""{"query" : "mutation {byEori(eoriHistory:{eori:\\"$testEori\\" validFrom:\\"$testValidFrom\\" validUntil:\\"$testValidUntil\\"}, notificationEmail: {address: \\"$testEmail\\", timestamp: \\"$testTimestamp\\"} )}" }"""
       val request = authorizedRequest.withBody(Json.parse(query))
-      val result = contentAsString(controller.graphqlBody.apply(request))
+      val result = contentAsString(controller.handleQuery.apply(request))
 
       result must include("data")
       result mustNot include("errors")
@@ -138,7 +138,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
       val query = s"""{"query" : "mutation {byEori(eoriHistory:{eori:\\"$testEori\\" validFrom:\\"$testValidFrom\\" validUntil:\\"$testValidUntil\\"} )}" }"""
       val request = authorizedRequest.withBody(Json.parse(query))
-      val result = contentAsString(controller.graphqlBody.apply(request))
+      val result = contentAsString(controller.handleQuery.apply(request))
 
       result must include("data")
       result mustNot include("errors")
@@ -151,7 +151,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
       val query = s"""{"query" : "mutation {byEori(notificationEmail: {address: \\"$testEmail\\", timestamp: \\"$testTimestamp\\"} )}" }"""
       val request = authorizedRequest.withBody(Json.parse(query))
-      val result = contentAsString(controller.graphqlBody.apply(request))
+      val result = contentAsString(controller.handleQuery.apply(request))
 
       result must include("data")
       result must include("errors")
@@ -192,8 +192,8 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       val query = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { eoriHistory {eori validFrom validUntil},  notificationEmail { address, timestamp }  } }"}"""
       val mutation = s"""{"query" : "mutation {byEori(eoriHistory:{eori:\\"$testEori\\"}, notificationEmail: {address: \\"$testEmail\\", timestamp: \\"$testTimestamp\\"} )}" }"""
       val result = await(for {
-        _ <- controller.graphqlBody.apply(authorizedRequest.withBody(Json.parse(mutation)))
-        queryResult <-  controller.graphqlBody.apply(authorizedRequest.withBody(Json.parse(query)))
+        _ <- controller.handleQuery.apply(authorizedRequest.withBody(Json.parse(mutation)))
+        queryResult <-  controller.handleQuery.apply(authorizedRequest.withBody(Json.parse(query)))
         byteString <- queryResult.body.consumeData(materializer)
         json <- Future.successful(Json.parse(byteString.utf8String))
       } yield json)
