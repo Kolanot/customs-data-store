@@ -68,6 +68,7 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
 
     val appConfig = new AppConfig(configuration,env)
     val mockHttp = mock[HttpClient]
+    FeatureSwitch.MdgRequest.enable()
     val service = new EoriHistoryService(appConfig, mockHttp)
     implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
     implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -118,7 +119,6 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
       .thenReturn(Future.successful(Json.fromJson[HistoricEoriResponse](Json.parse(jsonResponse).as[JsObject]).get))
 
     val  response = await(service.getHistory(EORI1))
-    println(response)
     response(3) mustBe EoriPeriod("GB552011111009",Some("2019-07-24"),Some("2019-07-23"))
   }
 
@@ -129,12 +129,6 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
 
     val  response = await(service.getHistory(EORI1))
     response mustBe List()
-  }
-
-  "The ETMPService.getCompanyInformation" should "when featureswitch get-company-info-from-mdg is enabled" in new ETMPScenario {
-    pending
-    //TODO: add featureswitch test
-    FeatureSwitch.GetCompanyInfoFromMdg.enable()
   }
 
 }
