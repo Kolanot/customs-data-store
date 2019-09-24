@@ -67,7 +67,6 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
   class ETMPScenario() {
     val env = Environment.simple()
     val configuration = Configuration.load(env)
-    FeatureSwitch.MdgRequest.enable()
 
     val appConfig = new AppConfig(configuration,env)
     val mockHttp = mock[HttpClient]
@@ -134,14 +133,6 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
       EoriPeriod("GB551011111009",Some("2019-07-24"),Some("2019-07-23")),
       EoriPeriod("GB552011111009",Some("2019-07-24"),Some("2019-07-23"))
     )
-  }
-
-  "EoriHistoryService" should "return an empty list when feature mdg-request is disabled" in new ETMPScenario {
-    FeatureSwitch.MdgRequest.disable()
-    when(mockHttp.GET[HistoricEoriResponse](any())(any(),any(),any())).thenReturn(Future.successful(generateResponse(List(someEori))))
-
-    private val response = await(service.getHistory(someEori))
-    response mustBe List()
   }
 
   "EoriHistoryService" should "propagate the HeaderCarrier through to the HTTP request, overwriting the Auth header" in new ETMPScenario {
