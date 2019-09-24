@@ -39,6 +39,7 @@ class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with Mockit
     val configuration = Configuration.load(env)
     val appConfig = new AppConfig(configuration, env)
     val mockHttp = mock[HttpClient]
+    FeatureSwitch.MdgRequest.enable()
     val service = new SubscriptionInfoService(appConfig, mockHttp)
     implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
     implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -48,23 +49,25 @@ class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with Mockit
 
     "return None when the featureswitch is disabled" in new SubscriptionServiceScenario {
       FeatureSwitch.MdgRequest.disable()
+      val response = await(service.getHistory(testEori))
+      response mustBe None
     }
 
     "Return None when the timestamp is not available" in new SubscriptionServiceScenario {
+      val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.noTimestamp(testEori)).get
+      when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
 
+      val response = await(service.getHistory(testEori))
+      response mustBe None
     }
 
     "Return Some, when the timestamp is available" in new SubscriptionServiceScenario {
-
-    }
-
-    "work" in new SubscriptionServiceScenario {
       val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.withTimestamp(testEori)).get
       when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
 
       val response = await(service.getHistory(testEori))
-      println(response)
+      response mustBe Some(MdgSub09DataModel("mickey.mouse@disneyland.com", Some("2019-09-06T12:30:59Z")))
     }
-  }
 
+  }
 }

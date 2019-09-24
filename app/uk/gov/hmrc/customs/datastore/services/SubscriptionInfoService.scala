@@ -37,7 +37,10 @@ class SubscriptionInfoService @Inject()(appConfig: AppConfig, http: HttpClient) 
       val hci: HeaderCarrier = hc.copy(authorization = Some(Authorization(appConfig.bearerToken)))
       val acknowledgementReference = Random.alphanumeric.take(32)
       val uri = s"${appConfig.companyInformationUrl}regime=CDS&acknowledgementReference=$acknowledgementReference&EORI=$eori"
-      http.GET[MdgSub09DataModel](uri)(implicitly, hci, implicitly).map(m => Option(m))
+      http.GET[MdgSub09DataModel](uri)(implicitly, hci, implicitly).map{m => m.verifiedTimestamp match {
+        case Some(_) => Some(m)
+        case None => None
+      }}
     } else {
       Future.successful(None)
     }
