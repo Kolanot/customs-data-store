@@ -55,10 +55,10 @@ object FeatureSwitch {
     }
 
     def setProp(value: Boolean) {
-      val systemProps = sys.props.+=((systemPropertyName, value.toString))
+      sys.props.+=((systemPropertyName, value.toString))
     }
   }
 
-  case object ActualMdg extends {val name = "actual-mdg"} with FeatureName  //This is to switch between sdes stub and real sdes on QA
+  case object ActualMdg extends {val name = "actual-mdg"} with FeatureName  // This is to switch between HODS stub and real services on QA
 
 }

@@ -36,6 +36,7 @@ trait InputUnmarshallerGenerator {
     override def fromResult(node: marshaller.Node): T = inputToClassFunc(node.asInstanceOf[Map[String, Any]])
   }
 }
+
 @Singleton
 class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService) extends InputUnmarshallerGenerator{
 
@@ -66,8 +67,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService)
     )
   })
 
-
-  val Queries: List[Field[Unit, Unit]] = List(
+  def Queries()(implicit hc: HeaderCarrier): List[Field[Unit, Unit]] = List(
     Field(
       name = "byEori",
       fieldType = OptionType(TraderDataType),
@@ -75,10 +75,10 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService)
         Argument("eori", StringType)
       ),
       resolve = sangriaContext => {
-        implicit val hc = HeaderCarrier()
         val eori = sangriaContext.args.arg[String]("eori")
         val eventualTraderData = eoriStore.findByEori(eori)
 
+        // TODO simplify this
         val isHistoricEoriLoaded = eventualTraderData.map(_.map(_.eoriHistory.headOption.exists(c => c.validFrom.isEmpty && c.validUntil.isEmpty)).getOrElse(true))
         val isHistoricEoriQueried = sangriaContext.astFields.flatMap(_.selections).map(_.renderPretty).exists(_.contains("eoriHistory"))
         isHistoricEoriLoaded.flatMap { mustRequest =>
@@ -102,8 +102,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService)
   /**
     * List of mutations to work with the entity of TraderData.
     */
-  val Mutations: List[Field[Unit, Unit]] = List(
-    //Example: {"query" : "mutation {addTrader(eori:\"GB12345678\" notificationEmail:\"abc@goodmail.com\")}" }
+  def Mutations()(implicit hc: HeaderCarrier): List[Field[Unit, Unit]] = List(
     Field(
       name = "byEori",
       fieldType = BooleanType,
@@ -114,7 +113,6 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService)
       resolve = ctx => {
         val email = ctx.args.raw.get(FieldNotificationEmail).flatMap(_.asInstanceOf[Option[NotificationEmail]])
         val eori = ctx.args.raw(EoriField).asInstanceOf[EoriPeriod]
-        implicit val hc = HeaderCarrier()
         val eventualEoriHistory = etmp.getHistory(eori.eori)
 
         for {

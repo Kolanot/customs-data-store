@@ -18,6 +18,7 @@ package uk.gov.hmrc.customs.datastore.services
 
 import java.time.LocalDate
 
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
@@ -29,6 +30,7 @@ import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.domain.onwire._
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.annotation.tailrec
@@ -70,19 +72,25 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
     val mockHttp = mock[HttpClient]
     val service = new EoriHistoryService(appConfig, mockHttp)
     implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
-    implicit val hc: HeaderCarrier = HeaderCarrier()
+    implicit val implicitHeaderCarrier: HeaderCarrier = HeaderCarrier(
+      authorization = Option(Authorization("myAwesomeCrypto")),
+      otherHeaders = List(("X-very-important", "foo"))
+    )
+
+    val someEori = "GB553011111009"
   }
 
-  "The history service" should "return a single eori history entry" in new ETMPScenario {
-    val EORI1 = "GB0000000001"
-    when(mockHttp.GET[HistoricEoriResponse](any())(any(),any(),any())).thenReturn(Future.successful(generateResponse(List(EORI1))))
+  "EoriHistoryService" should "hit the expected URL" in new ETMPScenario {
+    val actualURL: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
+    when(mockHttp.GET[HistoricEoriResponse](actualURL.capture())(any(), any(), any()))
+      .thenReturn(Future.successful(generateResponse(List(someEori))))
 
-    val  response = await(service.getHistory(EORI1))
-    response mustBe List(EoriPeriod(EORI1,Some("1985-03-20T19:30:51Z"),None))
+    await(service.getHistory(someEori))
+
+    actualURL.getValue mustBe appConfig.eoriHistoryUrl + someEori
   }
 
-  "The historic eori MDG response" should "return a single eori history entries" in new ETMPScenario {
-    val EORI1 = "GB553011111009"
+  "EoriHistoryService" should "return a list of EoriPeriod entries" in new ETMPScenario {
     val jsonResponse = s"""{
                          |  "getEORIHistoryResponse": {
                          |    "responseCommon": {
@@ -92,7 +100,7 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
                          |    "responseDetail": {
                          |      "EORIHistory": [
                          |        {
-                         |          "EORI": "$EORI1",
+                         |          "EORI": "$someEori",
                          |          "validFrom": "2019-07-24"
                          |        },
                          |        {
@@ -117,8 +125,25 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
     when(mockHttp.GET[HistoricEoriResponse](any())(any(),any(),any()))
       .thenReturn(Future.successful(Json.fromJson[HistoricEoriResponse](Json.parse(jsonResponse).as[JsObject]).get))
 
-    val  response = await(service.getHistory(EORI1))
-    response(3) mustBe EoriPeriod("GB552011111009",Some("2019-07-24"),Some("2019-07-23"))
+    private val response = await(service.getHistory(someEori))
+
+    response mustBe List(
+      EoriPeriod("GB553011111009",Some("2019-07-24"),None),
+      EoriPeriod("GB550011111009",Some("2009-05-16"),Some("2019-07-23")),
+      EoriPeriod("GB551011111009",Some("2019-07-24"),Some("2019-07-23")),
+      EoriPeriod("GB552011111009",Some("2019-07-24"),Some("2019-07-23"))
+    )
+  }
+
+  "EoriHistoryService" should "propagate the HeaderCarrier through to the HTTP request, overwriting the Auth header" in new ETMPScenario {
+    val actualHeaderCarrier: ArgumentCaptor[HeaderCarrier] = ArgumentCaptor.forClass(classOf[HeaderCarrier])
+    when(mockHttp.GET[HistoricEoriResponse](any())(any(), actualHeaderCarrier.capture(), any()))
+      .thenReturn(Future.successful(generateResponse(List(someEori))))
+
+    await(service.getHistory(someEori))
+
+    private val expectedHeaderCarrier = implicitHeaderCarrier.copy(authorization = Some(Authorization("Bearer secret-token")))
+    actualHeaderCarrier.getValue mustBe expectedHeaderCarrier
   }
 
 }

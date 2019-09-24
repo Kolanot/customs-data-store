@@ -18,11 +18,12 @@ package uk.gov.hmrc.customs.datastore.graphql
 
 import javax.inject.{Inject, Singleton}
 import sangria.schema.{ObjectType, fields}
+import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton()
 class GraphQL @Inject()(traderSchema: TraderDataSchema) {
 
-  val schema = sangria.schema.Schema(
+  def schema()(implicit hc: HeaderCarrier) = sangria.schema.Schema(
     query = ObjectType("Query",
       fields(
         traderSchema.Queries: _*
