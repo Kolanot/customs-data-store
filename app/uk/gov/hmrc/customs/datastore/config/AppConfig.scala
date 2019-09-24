@@ -37,7 +37,7 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
   }
 
   // TODO: rename actualmdg -> mdg; mdg -> mdg-stub
-  def companyInformationUrl: String = FeatureSwitch.GetCompanyInfoFromMdg.isEnabled() match {
+  def companyInformationUrl: String = FeatureSwitch.ActualMdg.isEnabled() match {
     case true => baseUrl("actualmdg") / getConfString("actualmdg.companyInformationEndpoint", "config-error")
     case false => baseUrl("mdg") / getConfString("mdg.companyInformationEndpoint", "config-error")
   }

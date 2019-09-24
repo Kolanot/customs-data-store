@@ -37,7 +37,6 @@ class EoriHistoryService @Inject()(appConfig: AppConfig, http: HttpClient) {
   val log: LoggerLike = Logger(this.getClass)
 
   def getHistory(eori: Eori)(implicit hc: HeaderCarrier, reads: HttpReads[HistoricEoriResponse]): Future[Seq[EoriPeriod]] = {
-    if(FeatureSwitch.MdgRequest.isEnabled()) {
       val hci: HeaderCarrier = hc.copy(authorization = Some(Authorization(appConfig.bearerToken)))
       http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}$eori")(reads, hci, implicitly)
         .map { response =>
@@ -45,9 +44,6 @@ class EoriHistoryService @Inject()(appConfig: AppConfig, http: HttpClient) {
             history => EoriPeriod(history.EORI, history.validFrom, history.validTo)
           }
         }
-    } else {
-      Future.successful(Nil)
-    }
   }
 
   def testSub21(eori: String)(implicit hc: HeaderCarrier, reads: HttpReads[HttpResponse], ec: ExecutionContext): Future[JsValue] = {
