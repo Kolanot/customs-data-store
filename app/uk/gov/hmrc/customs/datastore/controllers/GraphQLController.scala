@@ -27,6 +27,7 @@ import sangria.marshalling.playJson._
 import sangria.parser.QueryParser
 import uk.gov.hmrc.customs.datastore.graphql.GraphQL
 import uk.gov.hmrc.customs.datastore.services.ServerTokenAuthorization
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -96,7 +97,8 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
     * @param operation name of the GraphQL operation (queries or mutations)
     * @return simple result, which defines the response header and a body ready to send to the client
     */
-  def executeQuery(query: String, variables: Option[JsObject] = None, operation: Option[String] = None): Future[Result] = {
+  def executeQuery(query: String, variables: Option[JsObject] = None, operation: Option[String] = None)
+                  (implicit hc: HeaderCarrier): Future[Result] = {
     QueryParser.parse(query) match {
       case Success(queryAst: Document) =>
         Executor.execute(
