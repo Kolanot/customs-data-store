@@ -39,19 +39,12 @@ class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with Mockit
     val configuration = Configuration.load(env)
     val appConfig = new AppConfig(configuration, env)
     val mockHttp = mock[HttpClient]
-    FeatureSwitch.MdgRequest.enable()
     val service = new SubscriptionInfoService(appConfig, mockHttp)
     implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
     implicit val hc: HeaderCarrier = HeaderCarrier()
   }
 
   "The Service" should {
-
-    "return None when the featureswitch is disabled" in new SubscriptionServiceScenario {
-      FeatureSwitch.MdgRequest.disable()
-      val response = await(service.getHistory(testEori))
-      response mustBe None
-    }
 
     "Return None when the timestamp is not available" in new SubscriptionServiceScenario {
       val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.noTimestamp(testEori)).get
