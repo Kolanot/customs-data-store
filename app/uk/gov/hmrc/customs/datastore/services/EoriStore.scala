@@ -66,13 +66,13 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: App
     find(EoriSearchKey -> eori).map(_.headOption)
   }
 
-  def updateHistoricEoris(eoriHistory: Seq[EoriPeriod]): Future[Any] = {
+  def updateHistoricEoris(eoriHistory: Seq[EoriPeriod]): Future[Boolean] = {
     val eoriHistoryChangeSet = FieldEoriHistory -> toJsFieldJsValueWrapper(eoriHistory)
     findAndUpdate(
       query = Json.obj(EoriSearchKey -> Json.obj("$in" -> eoriHistory.map(_.eori))),
       update = Json.obj("$set" -> Json.obj(lastUpdatedChangeSet(), eoriHistoryChangeSet)),
       upsert = true
-    )
+    ).map(_.lastError.flatMap(_.err).isEmpty)
   }
 
   def upsertByEori(eoriPeriod: EoriPeriod, email: Option[NotificationEmail]): Future[Boolean] = {

@@ -27,7 +27,7 @@ import play.api.libs.functional.syntax._
  */
 case class MdgSub09DataModel(
                               emailAddress: EmailAddress,
-                              verifiedTimestamp: Option[String]  //TODO DateTime   //TODO You can remove the Option once ETMP updates it's api
+                              verifiedTimestamp: Option[String]  //TODO change it to DateTime   //TODO You can remove the Option once ETMP updates it's api
                             )
 
 object MdgSub09DataModel {

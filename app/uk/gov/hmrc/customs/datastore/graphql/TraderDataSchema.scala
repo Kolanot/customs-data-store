@@ -22,7 +22,7 @@ import sangria.macros.derive._
 import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput, ResultMarshaller}
 import sangria.schema._
 import uk.gov.hmrc.customs.datastore.domain._
-import uk.gov.hmrc.customs.datastore.services.{EoriHistoryService, EoriStore}
+import uk.gov.hmrc.customs.datastore.services.{EoriHistoryService, EoriStore, SubscriptionInfoService}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -38,7 +38,9 @@ trait InputUnmarshallerGenerator {
 }
 
 @Singleton
-class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService) extends InputUnmarshallerGenerator{
+class TraderDataSchema @Inject()(eoriStore: EoriStore,
+                                 historyService: EoriHistoryService,
+                                 subscriptionInfoService:SubscriptionInfoService) extends InputUnmarshallerGenerator {
 
   val log: LoggerLike = Logger(this.getClass)
 
@@ -67,6 +69,21 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService)
     )
   })
 
+  def retrieveAndStoreHistoricEoris(eori: Eori)(implicit hc: HeaderCarrier): Future[Boolean] = {
+    for {
+      eoriHistory <- historyService.getHistory(eori)
+      result <- eoriStore.updateHistoricEoris(eoriHistory)
+    } yield result
+  }
+
+  def retrieveAndStoreCustomerInformation(eori: Eori)(implicit hc: HeaderCarrier): Future[Boolean] = {
+    for {
+      customerInfo <-subscriptionInfoService.getSubscriberInformation(eori)
+      result <- eoriStore.upsertByEori(EoriPeriod(eori,None,None), customerInfo.map(ci => NotificationEmail(Option(ci.emailAddress),ci.verifiedTimestamp)))
+    } yield result
+  }
+
+
   def Queries()(implicit hc: HeaderCarrier): List[Field[Unit, Unit]] = List(
     Field(
       name = "byEori",
@@ -76,25 +93,15 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService)
       ),
       resolve = sangriaContext => {
         val eori = sangriaContext.args.arg[String]("eori")
-        val eventualTraderData = eoriStore.findByEori(eori)
+        for {
+          maybeTraderData <- eoriStore.findByEori(eori)
+          isHistoricEoriStored = maybeTraderData.map(_.eoriHistory.headOption.exists(c => c.validFrom.isDefined || c.validUntil.isDefined)).getOrElse(false)
+          isTraderEmailStored = maybeTraderData.flatMap(_.notificationEmail).map(_.address.isDefined).getOrElse(false)
+          _ <- if (isHistoricEoriStored) Future.successful(true) else retrieveAndStoreHistoricEoris(eori)
+          _ <- if (isTraderEmailStored) Future.successful(true) else retrieveAndStoreCustomerInformation(eori)
+          traderData <- if (isHistoricEoriStored && isTraderEmailStored) Future.successful(maybeTraderData ) else eoriStore.findByEori(eori)  //Retrieve again only if there were updates
+        } yield traderData
 
-        // TODO simplify this
-        val isHistoricEoriLoaded = eventualTraderData.map(_.map(_.eoriHistory.headOption.exists(c => c.validFrom.isEmpty && c.validUntil.isEmpty)).getOrElse(true))
-        val isHistoricEoriQueried = sangriaContext.astFields.flatMap(_.selections).map(_.renderPretty).exists(_.contains("eoriHistory"))
-        isHistoricEoriLoaded.flatMap { mustRequest =>
-          log.info(s"Query 'byEori' cache status - isHistoricEoriLoaded : $mustRequest , isHistoricEoriQueried: $isHistoricEoriQueried")
-          (mustRequest && isHistoricEoriQueried) match {
-            case true =>
-              for {
-                eoriHistory <- etmp.getHistory(eori)
-                _ <- Future.successful(log.info("Query 'byEori' request result - EoriHistory length: " + eoriHistory.length))
-                _ <- eoriStore.updateHistoricEoris(eoriHistory)
-                traderData <- eoriStore.findByEori(eori)
-              } yield traderData
-            case false =>
-              eventualTraderData
-          }
-        }
       }
     )
   )
@@ -113,7 +120,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore, etmp: EoriHistoryService)
       resolve = ctx => {
         val email = ctx.args.raw.get(FieldNotificationEmail).flatMap(_.asInstanceOf[Option[NotificationEmail]])
         val eori = ctx.args.raw(EoriField).asInstanceOf[EoriPeriod]
-        val eventualEoriHistory = etmp.getHistory(eori.eori)
+        val eventualEoriHistory = historyService.getHistory(eori.eori)
 
         for {
           result <- eoriStore.upsertByEori(eori,email)

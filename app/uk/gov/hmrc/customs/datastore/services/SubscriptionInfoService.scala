@@ -32,7 +32,7 @@ import scala.util.Random
 class SubscriptionInfoService @Inject()(appConfig: AppConfig, http: HttpClient) {
   val log: LoggerLike = Logger(this.getClass)
 
-  def getHistory(eori: Eori)(implicit hc: HeaderCarrier): Future[Option[MdgSub09DataModel]] = {
+  def getSubscriberInformation(eori: Eori)(implicit hc: HeaderCarrier): Future[Option[MdgSub09DataModel]] = {
       val hci: HeaderCarrier = hc.copy(authorization = Some(Authorization(appConfig.bearerToken)))
       val acknowledgementReference = Random.alphanumeric.take(32)
       val uri = s"${appConfig.companyInformationUrl}regime=CDS&acknowledgementReference=$acknowledgementReference&EORI=$eori"

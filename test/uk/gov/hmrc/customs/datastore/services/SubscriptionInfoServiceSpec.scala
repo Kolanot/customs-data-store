@@ -50,7 +50,7 @@ class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with Mockit
       val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.noTimestamp(testEori)).get
       when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
 
-      val response = await(service.getHistory(testEori))
+      val response = await(service.getSubscriberInformation(testEori))
       response mustBe None
     }
 
@@ -58,7 +58,7 @@ class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with Mockit
       val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.withTimestamp(testEori)).get
       when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
 
-      val response = await(service.getHistory(testEori))
+      val response = await(service.getSubscriberInformation(testEori))
       response mustBe Some(MdgSub09DataModel("mickey.mouse@disneyland.com", Some("2019-09-06T12:30:59Z")))
     }
 
