@@ -32,7 +32,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Random
 
-class SubscriptionInfoService @Inject()(appConfig: AppConfig, http: HttpClient) {
+class SubscriptionInfoService @Inject()(appConfig: AppConfig, http: HttpClient, metricsReporter: MetricsReporterService) {
   val log: LoggerLike = Logger(this.getClass)
 
   def getSubscriberInformation(eori: Eori)(implicit hc: HeaderCarrier): Future[Option[MdgSub09DataModel]] = {
@@ -49,9 +49,14 @@ class SubscriptionInfoService @Inject()(appConfig: AppConfig, http: HttpClient) 
 
       val acknowledgementReference = Random.alphanumeric.take(32).mkString
       val uri = s"${appConfig.companyInformationUrl}?regime=CDS&acknowledgementReference=$acknowledgementReference&EORI=$eori"
-      http.GET[MdgSub09DataModel](uri)(implicitly, hcWithExtraHeaders, implicitly).map{m => m.verifiedTimestamp match {
-        case Some(_) => Some(m)
-        case None => None
-      }}
+
+      metricsReporter.withResponseTimeLogging("mdg.get.company-information") {
+        http.GET[MdgSub09DataModel](uri)(implicitly, hcWithExtraHeaders, implicitly).map { m =>
+          m.verifiedTimestamp match {
+            case Some(_) => Some(m)
+            case None => None
+          }
+        }
+      }
   }
 }

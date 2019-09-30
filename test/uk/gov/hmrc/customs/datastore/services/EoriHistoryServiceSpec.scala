@@ -18,12 +18,13 @@ package uk.gov.hmrc.customs.datastore.services
 
 import java.time.LocalDate
 
-import org.mockito.ArgumentCaptor
+import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{verify, when}
+import org.mockito.invocation.InvocationOnMock
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FlatSpec, MustMatchers}
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
@@ -37,7 +38,7 @@ import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
 
-class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSugar with DefaultAwaitTimeout with FutureAwaits {
+class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSugar with MockitoAnswerSugar with DefaultAwaitTimeout with FutureAwaits {
 
   protected def generateResponse(eoris:Seq[Eori]):HistoricEoriResponse = {
     HistoricEoriResponse(
@@ -70,7 +71,10 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
 
     val appConfig = new AppConfig(configuration,env)
     val mockHttp = mock[HttpClient]
-    val service = new EoriHistoryService(appConfig, mockHttp)
+    val mockMetricsReporterService = mock[MetricsReporterService]
+    when(mockMetricsReporterService.withResponseTimeLogging(any())(any())(any()))
+      .thenAnswer((i: InvocationOnMock) => {i.getArgument[Future[JsString]](1)})
+    val service = new EoriHistoryService(appConfig, mockHttp, mockMetricsReporterService)
     implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
     implicit val implicitHeaderCarrier: HeaderCarrier = HeaderCarrier(
       authorization = Option(Authorization("myAwesomeCrypto")),
@@ -144,6 +148,30 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
 
     private val expectedHeaderCarrier = implicitHeaderCarrier.copy(authorization = Some(Authorization("Bearer secret-token")))
     actualHeaderCarrier.getValue mustBe expectedHeaderCarrier
+  }
+
+  "EoriHistoryService" should "log response time metric" in new ETMPScenario {
+    val jsonResponse = s"""{
+                          |  "getEORIHistoryResponse": {
+                          |    "responseCommon": {
+                          |      "status": "OK",
+                          |      "processingDate": "2019-07-26T10:21:13Z"
+                          |    },
+                          |    "responseDetail": {
+                          |      "EORIHistory": [
+                          |        {
+                          |          "EORI": "$someEori",
+                          |          "validFrom": "2019-07-24"
+                          |        }
+                          |      ]
+                          |    }
+                          |  }
+                          |}""".stripMargin
+    when(mockHttp.GET[HistoricEoriResponse](any())(any(),any(),any()))
+      .thenReturn(Future.successful(Json.fromJson[HistoricEoriResponse](Json.parse(jsonResponse).as[JsObject]).get))
+
+    await(service.getHistory(someEori))
+    verify(mockMetricsReporterService).withResponseTimeLogging(ArgumentMatchers.eq("mdg.get.oeri-history"))(any())(any())
   }
 
 }
