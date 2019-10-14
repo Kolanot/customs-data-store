@@ -64,6 +64,7 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
     val configuration = Configuration.load(env)
     val appConfig = new AppConfig(configuration, env)
     val authConnector = new ServerTokenAuthorization(appConfig)
+    FeatureSwitch.DataStore.enable()
 
     val schema = new TraderDataSchema(mockEoriStore, mockHistoryService, mockCustomerInfoService)
     val graphQL = new GraphQL(schema)
