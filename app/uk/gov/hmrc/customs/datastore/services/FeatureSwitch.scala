@@ -25,7 +25,6 @@ object FeatureSwitch {
   def forName(name: String): FeatureName = {
     name match {
       case ActualMdg.name => ActualMdg
-      case DataStore.name => DataStore
     }
   }
 
@@ -61,7 +60,5 @@ object FeatureSwitch {
   }
 
   case object ActualMdg extends {val name = "actual-mdg"} with FeatureName  // This is to switch between HODS stub and real services on QA
-
-  case object DataStore extends {val name = "data-store"} with FeatureName // This is to test storing the data into data store
 
 }

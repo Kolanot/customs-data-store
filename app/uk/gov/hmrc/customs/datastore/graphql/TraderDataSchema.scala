@@ -22,7 +22,7 @@ import sangria.macros.derive._
 import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput, ResultMarshaller}
 import sangria.schema._
 import uk.gov.hmrc.customs.datastore.domain._
-import uk.gov.hmrc.customs.datastore.services.{EoriHistoryService, EoriStore, FeatureSwitch, SubscriptionInfoService}
+import uk.gov.hmrc.customs.datastore.services.{EoriHistoryService, EoriStore, SubscriptionInfoService}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -97,8 +97,8 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,
           maybeTraderData <- eoriStore.findByEori(eori)
           isHistoricEoriStored = maybeTraderData.map(_.eoriHistory.headOption.exists(c => c.validFrom.isDefined || c.validUntil.isDefined)).getOrElse(false)
           isTraderEmailStored = maybeTraderData.flatMap(_.notificationEmail).map(_.address.isDefined).getOrElse(false)
-          _ <- if (isHistoricEoriStored && FeatureSwitch.DataStore.isEnabled()) Future.successful(true) else retrieveAndStoreHistoricEoris(eori)
-          _ <- if (isTraderEmailStored && FeatureSwitch.DataStore.isEnabled()) Future.successful(true) else retrieveAndStoreCustomerInformation(eori)
+          _ <- if (isHistoricEoriStored) Future.successful(true) else retrieveAndStoreHistoricEoris(eori)
+          _ <- if (isTraderEmailStored) Future.successful(true) else retrieveAndStoreCustomerInformation(eori)
           traderData <- if (isHistoricEoriStored && isTraderEmailStored) Future.successful(maybeTraderData ) else eoriStore.findByEori(eori)  //Retrieve again only if there were updates
         } yield traderData
 
