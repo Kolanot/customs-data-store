@@ -43,7 +43,7 @@ class EoriHistoryService @Inject()(appConfig: AppConfig, http: HttpClient, metri
       http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}$eori")(reads, hci, implicitly)
         .map { response =>
           response.getEORIHistoryResponse.responseDetail.EORIHistory.map {
-            history => EoriPeriod(history.EORI, history.validFrom, history.validTo)
+            history => EoriPeriod(history.EORI, history.validFrom, history.validUntil)
           }
         }
     }

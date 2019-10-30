@@ -110,17 +110,17 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
                          |        {
                          |          "EORI": "GB550011111009",
                          |          "validFrom": "2009-05-16",
-                         |          "validTo": "2019-07-23"
+                         |          "validUntil": "2019-07-23"
                          |        },
                          |        {
                          |          "EORI": "GB551011111009",
                          |          "validFrom": "2019-07-24",
-                         |          "validTo": "2019-07-23"
+                         |          "validUntil": "2019-07-23"
                          |        },
                          |        {
                          |          "EORI": "GB552011111009",
                          |          "validFrom": "2019-07-24",
-                         |          "validTo": "2019-07-23"
+                         |          "validUntil": "2019-07-23"
                          |        }
                          |      ]
                          |    }
