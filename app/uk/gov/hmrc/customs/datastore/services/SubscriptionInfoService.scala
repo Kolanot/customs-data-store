@@ -47,16 +47,17 @@ class SubscriptionInfoService @Inject()(appConfig: AppConfig, http: HttpClient, 
 
     val hcWithExtraHeaders: HeaderCarrier = hc.copy(authorization = Some(Authorization(appConfig.bearerToken)), extraHeaders = hc.extraHeaders ++ headers)
 
-      val acknowledgementReference = Random.alphanumeric.take(32).mkString
-      val uri = s"${appConfig.companyInformationUrl}?regime=CDS&acknowledgementReference=$acknowledgementReference&EORI=$eori"
+    val acknowledgementReference = Random.alphanumeric.take(32).mkString
+    val uri = s"${appConfig.companyInformationUrl}?regime=CDS&acknowledgementReference=$acknowledgementReference&EORI=$eori"
 
-      metricsReporter.withResponseTimeLogging("mdg.get.company-information") {
-        http.GET[MdgSub09DataModel](uri)(implicitly, hcWithExtraHeaders, implicitly).map { m =>
-          m.verifiedTimestamp match {
-            case Some(_) => Some(m)
-            case None => None
-          }
+    metricsReporter.withResponseTimeLogging("mdg.get.company-information") {
+      http.GET[MdgSub09DataModel](uri)(implicitly, hcWithExtraHeaders, implicitly).map { m =>
+        m.verifiedTimestamp match {
+          case Some(_) => Some(m)
+          case None => None
         }
       }
+      // TODO: add recover with error log
+    }
   }
 }
