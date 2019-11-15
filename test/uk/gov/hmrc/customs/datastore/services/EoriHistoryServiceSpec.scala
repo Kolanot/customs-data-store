@@ -171,7 +171,7 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
       .thenReturn(Future.successful(Json.fromJson[HistoricEoriResponse](Json.parse(jsonResponse).as[JsObject]).get))
 
     await(service.getHistory(someEori))
-    verify(mockMetricsReporterService).withResponseTimeLogging(ArgumentMatchers.eq("mdg.get.oeri-history"))(any())(any())
+    verify(mockMetricsReporterService).withResponseTimeLogging(ArgumentMatchers.eq("mdg.get.eori-history"))(any())(any())
   }
 
 }

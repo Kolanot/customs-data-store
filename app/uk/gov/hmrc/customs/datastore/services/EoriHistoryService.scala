@@ -39,7 +39,7 @@ class EoriHistoryService @Inject()(appConfig: AppConfig, http: HttpClient, metri
   def getHistory(eori: Eori)(implicit hc: HeaderCarrier, reads: HttpReads[HistoricEoriResponse]): Future[Seq[EoriPeriod]] = {
     val hci: HeaderCarrier = hc.copy(authorization = Some(Authorization(appConfig.bearerToken)))
 
-    metricsReporter.withResponseTimeLogging("mdg.get.oeri-history") {
+    metricsReporter.withResponseTimeLogging("mdg.get.eori-history") {
       http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}$eori")(reads, hci, implicitly)
         .map { response =>
           response.getEORIHistoryResponse.responseDetail.EORIHistory.map {
