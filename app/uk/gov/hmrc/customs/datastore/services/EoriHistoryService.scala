@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneId}
 
 import javax.inject.Inject
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain.onwire.HistoricEoriResponse
@@ -31,6 +31,7 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 class EoriHistoryService @Inject()(appConfig: AppConfig, http: HttpClient, metricsReporter: MetricsReporterService) {
 
@@ -40,10 +41,17 @@ class EoriHistoryService @Inject()(appConfig: AppConfig, http: HttpClient, metri
     val hci: HeaderCarrier = hc.copy(authorization = Some(Authorization(appConfig.bearerToken)))
 
     metricsReporter.withResponseTimeLogging("mdg.get.eori-history") {
-      http.GET[HistoricEoriResponse](s"${appConfig.eoriHistoryUrl}$eori")(reads, hci, implicitly)
-        .map { response =>
-          response.getEORIHistoryResponse.responseDetail.EORIHistory.map {
-            history => EoriPeriod(history.EORI, history.validFrom, history.validUntil)
+      val url = s"${appConfig.eoriHistoryUrl}$eori"
+      http.GET[HttpResponse](url)(implicitly, hci, implicitly)
+        .map { httpResponse =>
+          Try(reads.read("GET", url, httpResponse)) match {
+            case Success(value) =>
+              value.getEORIHistoryResponse.responseDetail.EORIHistory.map {
+                history => EoriPeriod(history.EORI, history.validFrom, history.validUntil)
+              }
+            case Failure(ex) =>  //We did manual json to case class conversion, so that we can write this message on error level
+              log.error(ex.getMessage, ex)
+              throw ex
           }
         }
     }
@@ -64,24 +72,26 @@ class EoriHistoryService @Inject()(appConfig: AppConfig, http: HttpClient, metri
     val dateFormat = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss z").withZone(ZoneId.systemDefault())
     val localDate = LocalDateTime.now().format(dateFormat)
 
-    val headers = Seq(("Date"->localDate),
-      ("X-Correlation-ID"->java.util.UUID.randomUUID().toString),
-      ("X-Forwarded-Host"->"MDTP"),
-      ("Accept"->"application/json"))
+    val headers = Seq(("Date" -> localDate),
+      ("X-Correlation-ID" -> java.util.UUID.randomUUID().toString),
+      ("X-Forwarded-Host" -> "MDTP"),
+      ("Accept" -> "application/json"))
 
     val hcWithExtraHeaders: HeaderCarrier = hc.copy(authorization = Some(Authorization(appConfig.bearerToken)), extraHeaders = hc.extraHeaders ++ headers)
 
     log.info("MDG request headers: " + hcWithExtraHeaders)
 
-    val queryParams = Seq(("regime"->"CDS"),("acknowledgementReference"->"21a2b17559e64b14be257a112a7d9e8e"),("EORI"->eori))
+    val queryParams = Seq(("regime" -> "CDS"), ("acknowledgementReference" -> "21a2b17559e64b14be257a112a7d9e8e"), ("EORI" -> eori))
 
     val mdgUrl = appConfig.companyInformationUrl
 
     log.info("MDG sub09 URL: " + mdgUrl)
 
     http.GET[HttpResponse](mdgUrl, queryParams)(implicitly, hcWithExtraHeaders, implicitly)
-      .map{ a => log.info(a.body)
-        Json.parse(a.body)}
+      .map { a =>
+        log.info(a.body)
+        Json.parse(a.body)
+      }
   }
 
 }

@@ -30,12 +30,14 @@ import play.api.{Configuration, Environment}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.domain.onwire._
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
+import scala.concurrent.duration._
 import scala.annotation.tailrec
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.Failure
 
 
 class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSugar with MockitoAnswerSugar with DefaultAwaitTimeout with FutureAwaits {
@@ -86,8 +88,8 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
 
   "EoriHistoryService" should "hit the expected URL" in new ETMPScenario {
     val actualURL: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
-    when(mockHttp.GET[HistoricEoriResponse](actualURL.capture())(any(), any(), any()))
-      .thenReturn(Future.successful(generateResponse(List(someEori))))
+    when(mockHttp.GET[HttpResponse](actualURL.capture())(any(), any(), any()))
+      .thenReturn(Future.successful(HttpResponse(200, Some(Json.toJson(generateResponse(List(someEori)))))))
 
     await(service.getHistory(someEori))
 
@@ -126,8 +128,10 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
                          |    }
                          |  }
                          |}""".stripMargin
-    when(mockHttp.GET[HistoricEoriResponse](any())(any(),any(),any()))
-      .thenReturn(Future.successful(Json.fromJson[HistoricEoriResponse](Json.parse(jsonResponse).as[JsObject]).get))
+
+
+        when(mockHttp.GET[HttpResponse](any())(any(),any(),any()))
+          .thenReturn(Future.successful(HttpResponse(200, Some(Json.parse(jsonResponse).as[JsObject]))))
 
     private val response = await(service.getHistory(someEori))
 
@@ -141,8 +145,8 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
 
   "EoriHistoryService" should "propagate the HeaderCarrier through to the HTTP request, overwriting the Auth header" in new ETMPScenario {
     val actualHeaderCarrier: ArgumentCaptor[HeaderCarrier] = ArgumentCaptor.forClass(classOf[HeaderCarrier])
-    when(mockHttp.GET[HistoricEoriResponse](any())(any(), actualHeaderCarrier.capture(), any()))
-      .thenReturn(Future.successful(generateResponse(List(someEori))))
+    when(mockHttp.GET[HttpResponse](any())(any(), actualHeaderCarrier.capture(), any()))
+      .thenReturn(Future.successful(HttpResponse(200, Some(Json.toJson(generateResponse(List(someEori)))))))
 
     await(service.getHistory(someEori))
 
@@ -167,11 +171,27 @@ class EoriHistoryServiceSpec extends FlatSpec with MustMatchers with MockitoSuga
                           |    }
                           |  }
                           |}""".stripMargin
-    when(mockHttp.GET[HistoricEoriResponse](any())(any(),any(),any()))
-      .thenReturn(Future.successful(Json.fromJson[HistoricEoriResponse](Json.parse(jsonResponse).as[JsObject]).get))
+    when(mockHttp.GET[HttpResponse](any())(any(),any(),any()))
+      .thenReturn(Future.successful(HttpResponse(200, Some(Json.parse(jsonResponse).as[JsObject]))))
 
     await(service.getHistory(someEori))
     verify(mockMetricsReporterService).withResponseTimeLogging(ArgumentMatchers.eq("mdg.get.eori-history"))(any())(any())
+  }
+
+  "EoriHistoryService" should "log an error about exceptions" in new ETMPScenario {
+    val errorResponse = """<html>
+                          |<head><title>Error Error 403 Forbidden/Blocked - MDG-WAF 15671#15671: *1445924/Blocked - MDG-WAF:: Empty Uri</title></head>
+                          |<body bgcolor="white">
+                          |<center><h1>403 Forbidden</h1></center>
+                          |<hr><center>nginx</center>
+                          |</body>
+                          |</html>""".stripMargin
+    val httpResponse = HttpResponse(403, None, Map.empty, Some(errorResponse))
+    when(mockHttp.GET[HttpResponse](any())(any(),any(),any()))
+      .thenReturn(Future.successful(httpResponse))
+
+    val response = Await.ready(service.getHistory(someEori), 2 seconds)
+    response.onFailure{case ex:uk.gov.hmrc.http.Upstream4xxResponse => ex.upstreamResponseCode mustBe 403}
   }
 
 }
