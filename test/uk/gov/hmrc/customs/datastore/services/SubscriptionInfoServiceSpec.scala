@@ -30,7 +30,9 @@ import uk.gov.hmrc.customs.datastore.domain.onwire.{MdgSub09DataModel, Sub09Resp
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.Failure
 
 
 class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with MockitoSugar with MockitoAnswerSugar with FutureAwaits with DefaultAwaitTimeout {
@@ -76,5 +78,10 @@ class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with Mockit
       verify(mockMetricsReporterService).withResponseTimeLogging(ArgumentMatchers.eq("mdg.get.company-information"))(any())(any())
     }
 
+    "log handle an error" in new SubscriptionServiceScenario {
+      when(mockHttp.GET[MdgSub09DataModel](any())(any(),any(),any())).thenReturn(Future.failed(new Exception("Boom")))
+      val res = Await.ready(service.getSubscriberInformation(testEori), 2 seconds)
+      res.value.get.isFailure mustBe true
+    }
   }
 }

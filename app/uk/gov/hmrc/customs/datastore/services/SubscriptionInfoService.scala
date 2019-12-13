@@ -27,7 +27,7 @@ import uk.gov.hmrc.customs.datastore.domain.onwire.MdgSub09DataModel
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-
+import scala.util.{Success, Failure}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Random
@@ -40,10 +40,10 @@ class SubscriptionInfoService @Inject()(appConfig: AppConfig, http: HttpClient, 
     val localDate = LocalDateTime.now().format(dateFormat)
 
     //TODO Do we have to add these headers all the time, will not Customs-financials-api forward them to us???
-    val headers = Seq(("Date"->localDate),
-      ("X-Correlation-ID"->java.util.UUID.randomUUID().toString),
-      ("X-Forwarded-Host"->"MDTP"),
-      ("Accept"->"application/json"))
+    val headers = Seq(("Date" -> localDate),
+      ("X-Correlation-ID" -> java.util.UUID.randomUUID().toString),
+      ("X-Forwarded-Host" -> "MDTP"),
+      ("Accept" -> "application/json"))
 
     val hcWithExtraHeaders: HeaderCarrier = hc.copy(authorization = Some(Authorization(appConfig.bearerToken)), extraHeaders = hc.extraHeaders ++ headers)
 
@@ -51,13 +51,11 @@ class SubscriptionInfoService @Inject()(appConfig: AppConfig, http: HttpClient, 
     val uri = s"${appConfig.companyInformationUrl}?regime=CDS&acknowledgementReference=$acknowledgementReference&EORI=$eori"
 
     metricsReporter.withResponseTimeLogging("mdg.get.company-information") {
-      http.GET[MdgSub09DataModel](uri)(implicitly, hcWithExtraHeaders, implicitly).map { m =>
-        m.verifiedTimestamp match {
-          case Some(_) => Some(m)
-          case None => None
-        }
-      }
-      // TODO: add recover with error log
+      http.GET[MdgSub09DataModel](uri)(implicitly, hcWithExtraHeaders, implicitly)
+        .transform(
+          s =>  if (s.verifiedTimestamp.isDefined) Some(s) else None,
+          f => {log.error(s"Getting Subscriber Information failed with: ${f.getMessage}", f); f}
+        )
     }
   }
 }
