@@ -55,7 +55,7 @@ class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with Mockit
   "The Service" should {
 
     "Return None when the timestamp is not available" in new SubscriptionServiceScenario {
-      val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.noTimestamp(testEori)).get
+      val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.withEmailNoTimestamp(testEori)).get
       when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
 
       val response = await(service.getSubscriberInformation(testEori))
@@ -63,15 +63,15 @@ class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with Mockit
     }
 
     "Return Some, when the timestamp is available" in new SubscriptionServiceScenario {
-      val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.withTimestamp(testEori)).get
+      val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.withEmailAndTimestamp(testEori)).get
       when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
 
       val response = await(service.getSubscriberInformation(testEori))
-      response mustBe Some(MdgSub09DataModel("mickey.mouse@disneyland.com", Some("2019-09-06T12:30:59Z")))
+      response mustBe Some(MdgSub09DataModel(Some("mickey.mouse@disneyland.com"), Some("2019-09-06T12:30:59Z")))
     }
 
     "log response time metric" in new SubscriptionServiceScenario {
-      val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.withTimestamp(testEori)).get
+      val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.withEmailAndTimestamp(testEori)).get
       when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
 
       await(service.getSubscriberInformation(testEori))

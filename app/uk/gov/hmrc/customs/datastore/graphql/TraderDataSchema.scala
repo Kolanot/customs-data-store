@@ -79,7 +79,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,
   def retrieveAndStoreCustomerInformation(eori: Eori)(implicit hc: HeaderCarrier): Future[Boolean] = {
     for {
       customerInfo <-subscriptionInfoService.getSubscriberInformation(eori)
-      result <- eoriStore.upsertByEori(EoriPeriod(eori,None,None), customerInfo.map(ci => NotificationEmail(Option(ci.emailAddress),ci.verifiedTimestamp)))
+      result <- eoriStore.upsertByEori(EoriPeriod(eori,None,None), customerInfo.map(ci => NotificationEmail(ci.emailAddress,ci.verifiedTimestamp)))
     } yield result
   }
 

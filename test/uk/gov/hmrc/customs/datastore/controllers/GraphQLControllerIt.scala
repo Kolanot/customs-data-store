@@ -57,7 +57,7 @@ class GraphQLControllerIt extends WordSpec with MongoSpecSupport with MockitoSug
     EoriPeriod("GB222222", Some("2002-01-20T00:00:00Z"), Some("2001-01-20T00:00:00Z")),
     EoriPeriod("GB333333", Some("2001-01-20T00:00:00Z"), Some("1999-01-20T00:00:00Z"))
   )
-  val testSubscriberInfo = new MdgSub09DataModel(testEmail,Some("2010-01-20T00:00:00Z"))
+  val testSubscriberInfo = new MdgSub09DataModel(Some(testEmail),Some("2010-01-20T00:00:00Z"))
 
   class GraphQLScenario() {
 
