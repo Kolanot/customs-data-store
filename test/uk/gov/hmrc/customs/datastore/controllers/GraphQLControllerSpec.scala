@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.customs.datastore.controllers
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{eq => is, _}
 import org.mockito.Mockito.{never, verify, when}
@@ -25,18 +23,16 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.words.MatcherWords
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.libs.json.Json
 import play.api.test.Helpers.{POST, contentAsString, _}
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
 import play.api.{Configuration, Environment}
-import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.graphql.{GraphQL, TraderDataSchema}
 import uk.gov.hmrc.customs.datastore.services._
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.RequestId
-import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future

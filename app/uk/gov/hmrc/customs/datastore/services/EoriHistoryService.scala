@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneId}
 
 import javax.inject.Inject
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain.onwire.HistoricEoriResponse

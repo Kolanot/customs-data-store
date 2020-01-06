@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.Failure
 
 
 class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with MockitoSugar with MockitoAnswerSugar with FutureAwaits with DefaultAwaitTimeout {

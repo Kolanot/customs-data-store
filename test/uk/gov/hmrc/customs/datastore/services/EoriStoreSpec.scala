@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package uk.gov.hmrc.customs.datastore.services
 
 import org.scalatest.{Assertion, BeforeAndAfterEach, MustMatchers, WordSpec}
-import play.api.{Configuration, Environment}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+import play.api.{Configuration, Environment}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
