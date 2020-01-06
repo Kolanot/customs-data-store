@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,14 @@ import org.mockito.ArgumentMatchers.{any, eq => is}
 import org.mockito.Mockito.{never, times, verify, when}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{MustMatchers, WordSpec}
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json.{JsString, Json}
-import play.api.test.Helpers.{POST, contentAsString}
+import play.api.test.Helpers.POST
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
 import play.api.{Configuration, Environment}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.datastore.config.AppConfig
+import uk.gov.hmrc.customs.datastore.domain.onwire.MdgSub09DataModel
 import uk.gov.hmrc.customs.datastore.domain.{EmailAddress, EoriPeriod, NotificationEmail, TraderData}
 import uk.gov.hmrc.customs.datastore.graphql.{GraphQL, TraderDataSchema}
 import uk.gov.hmrc.customs.datastore.services._
@@ -38,8 +40,6 @@ import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import uk.gov.hmrc.customs.datastore.domain.onwire.MdgSub09DataModel
 
 /**
   * These are integration tests from the GraphQL query down to Mongo db
