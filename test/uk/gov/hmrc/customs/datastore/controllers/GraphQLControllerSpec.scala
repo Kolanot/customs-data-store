@@ -31,7 +31,7 @@ import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.graphql.{GraphQL, TraderDataSchema}
 import uk.gov.hmrc.customs.datastore.services._
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, ServiceUnavailableException}
 import uk.gov.hmrc.http.logging.RequestId
 
 import scala.collection.JavaConverters._
@@ -116,6 +116,34 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
 
       verify(mockEoriStore).updateHistoricEoris(historicEoris)
       actualHeaderCarrier.getAllValues.asScala.map(_.requestId) mustBe List(Some(RequestId(queryRequestId)))
+    }
+
+    "return SERVICE_UNAVAILABLE when getSubscriberInformation throws ServiceUnavailableException" in new GraphQLScenario() {
+      val traderData = TraderData(
+        Seq(EoriPeriod(testEori, None, None)), None)
+
+      when(mockHistoryService.getHistory(is(testEori))(any(), any()))
+        .thenReturn(Future.successful(Seq(EoriPeriod(testEori, Some("2010-01-20T00:00:00Z"), None))))
+      when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.findByEori(is(testEori)))
+        .thenReturn(Future.successful(Some(traderData)))
+      when(mockCustomerInfoService.getSubscriberInformation(is(testEori))(any()))
+        .thenReturn(Future.failed(new ServiceUnavailableException("Boom")))
+
+      val query = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { eoriHistory { eori }  } }"}"""
+      val queryRequestId = "can-i-haz-eori-history"
+      val request = authorizedRequest.withBody(Json.parse(query)).withHeaders("X-Request-ID" -> queryRequestId)
+
+      val result = controller.handleQuery()(request)
+      status(result) mustBe SERVICE_UNAVAILABLE
+    }
+
+    "retrieveAndStoreCustomerInformation" should {
+      "propagate ServiceUnavailableException" in new GraphQLScenario() {
+        implicit val hc: HeaderCarrier = HeaderCarrier()
+        when(mockCustomerInfoService.getSubscriberInformation(any())(any())).thenReturn(Future.failed(new ServiceUnavailableException("Boom")))
+        assertThrows[ServiceUnavailableException](await(schema.retrieveAndStoreCustomerInformation(testEori)))
+      }
     }
   }
 

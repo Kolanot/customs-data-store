@@ -22,12 +22,13 @@ import play.api.libs.json._
 import play.api.mvc._
 import play.api.{Logger, LoggerLike}
 import sangria.ast.Document
-import sangria.execution._
+import sangria.execution.{HandledException, _}
 import sangria.marshalling.playJson._
+import sangria.marshalling.MarshallingUtil._
 import sangria.parser.QueryParser
 import uk.gov.hmrc.customs.datastore.graphql.GraphQL
 import uk.gov.hmrc.customs.datastore.services.ServerTokenAuthorization
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, ServiceUnavailableException}
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -102,15 +103,20 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
     QueryParser.parse(query) match {
       case Success(queryAst: Document) =>
         Executor.execute(
-        schema = graphQL.schema,
-        queryAst = queryAst,
-        variables = variables.getOrElse(Json.obj())
-      ).map(Ok(_))
+          schema = graphQL.schema,
+          queryAst = queryAst,
+          variables = variables.getOrElse(Json.obj()),
+          exceptionHandler = ExceptionHandler { case (m, e: ServiceUnavailableException) => HandledException(s"service unavailable: ${e.getMessage}", Map("exception" → m.fromString("ServiceUnavailableException"))) }
+        ).map { result =>
+          val isServiceUnavailable = (result \\ "exception").contains(JsString("ServiceUnavailableException"))
+          if(isServiceUnavailable) { log.error("graphql execute query failed with service unavailable"); ServiceUnavailable("Boom") }
+          else Ok(result)
+        }
         .recover {
           case error: QueryAnalysisError => log.error(s"graphql error: ${error.getMessage}"); BadRequest(error.resolveError)
           case error: ErrorWithResolver => log.error(s"graphql error: ${error.getMessage}"); InternalServerError(error.resolveError)
         }
-      case Failure(ex) => log.error(s"graphql error: ${ex.getMessage}"); Future(BadRequest(s"${ex.getMessage}"))
+      case Failure(ex) => log.error(s"graphql query parse error: ${ex.getMessage}"); Future(BadRequest(s"${ex.getMessage}"))
     }
   }
 
