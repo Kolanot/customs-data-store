@@ -1,3 +1,3 @@
 # microservice specific routes
 
-POST       /graphql                        uk.gov.hmrc.customs.datastore.controllers.GraphQLController.handleQuery
+POST       /graphql                        uk.gov.hmrc.customs.datastore.controllers.GraphQLController.handleRequest

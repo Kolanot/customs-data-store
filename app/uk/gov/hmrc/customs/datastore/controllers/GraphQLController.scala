@@ -53,7 +53,7 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
     *
     * @return an 'Action' to handle a request and generate a result to be sent to the client
     */
-  def handleQuery(): Action[JsValue] = serverAuth.async(parse.json) {
+  def handleRequest(): Action[JsValue] = serverAuth.async(parse.json) {
     implicit request: Request[JsValue] =>
 
       val extract: JsValue => (String, Option[String], Option[JsObject]) = query => (
@@ -79,14 +79,16 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
       }
 
       maybeQuery match {
-        case Success((query, operationName, variables)) => executeQuery(query, variables, operationName)
-        case Failure(error) => Future.successful {
-          log.error(s"graphQL query parsing error: ${error.getMessage}")
-          BadRequest(json.JsObject(Map(
-            "ErrorMessage" ->  JsString(error.getMessage),
-            "Stack" -> JsString(error.getStackTrace.mkString(" "))))
-          )
-        }
+        case Success((query, operationName, variables)) =>
+          handleGraphQLQuery(query, variables, operationName)
+        case Failure(error) =>
+          Future.successful {
+            log.error(s"graphQL query parsing error: ${error.getMessage}")
+            BadRequest(json.JsObject(Map(
+              "ErrorMessage" ->  JsString(error.getMessage),
+              "Stack" -> JsString(error.getStackTrace.mkString(" "))))
+            )
+          }
       }
   }
 
@@ -98,26 +100,38 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
     * @param operation name of the GraphQL operation (queries or mutations)
     * @return simple result, which defines the response header and a body ready to send to the client
     */
-  def executeQuery(query: String, variables: Option[JsObject] = None, operation: Option[String] = None)
-                  (implicit hc: HeaderCarrier): Future[Result] = {
+  def handleGraphQLQuery(query: String, variables: Option[JsObject] = None, operation: Option[String] = None)
+                        (implicit hc: HeaderCarrier): Future[Result] = {
     QueryParser.parse(query) match {
       case Success(queryAst: Document) =>
-        Executor.execute(
-          schema = graphQL.schema,
-          queryAst = queryAst,
-          variables = variables.getOrElse(Json.obj()),
-          exceptionHandler = ExceptionHandler { case (m, e: Upstream5xxResponse) => HandledException(s"service unavailable: ${e.getMessage}", Map("exception" → m.fromString("Upstream5xxResponse"))) }
-        ).map { result =>
-          val isServiceUnavailable = (result \\ "exception").contains(JsString("Upstream5xxResponse"))
-          if(isServiceUnavailable) { log.error("graphql execute query failed with service unavailable"); ServiceUnavailable("Upstream service is unavailable") }
-          else Ok(result)
-        }
-        .recover {
-          case error: QueryAnalysisError => log.error(s"graphql error: ${error.getMessage}"); BadRequest(error.resolveError)
-          case error: ErrorWithResolver => log.error(s"graphql error: ${error.getMessage}"); InternalServerError(error.resolveError)
-        }
-      case Failure(ex) => log.error(s"graphql query parse error: ${ex.getMessage}"); Future(BadRequest(s"${ex.getMessage}"))
+        executeGraphQLQuery(variables, queryAst)
+      case Failure(error) =>
+        log.error(s"graphql query parse error: ${error.getMessage}")
+        Future(BadRequest(s"${error.getMessage}"))
     }
+  }
+
+  private def executeGraphQLQuery(variables: Option[JsObject], queryAst: Document) = {
+    val exceptionHandler = ExceptionHandler { case (m, e: Upstream5xxResponse) =>
+      HandledException(s"service unavailable: ${e.getMessage}", Map("exception" → m.fromString("Upstream5xxResponse")))
+    }
+
+    Executor.execute(
+      schema = graphQL.schema,
+      queryAst = queryAst,
+      variables = variables.getOrElse(Json.obj()),
+      exceptionHandler = exceptionHandler
+    ).map { result =>
+        val isServiceUnavailable = (result \\ "exception").contains(JsString("Upstream5xxResponse"))
+        if (isServiceUnavailable) {
+          log.error("graphql execute query failed with service unavailable");
+          ServiceUnavailable("Upstream service is unavailable")
+        }
+        else Ok(result)
+    }.recover {
+        case error: QueryAnalysisError => log.error(s"graphql error: ${error.getMessage}"); BadRequest(error.resolveError)
+        case error: ErrorWithResolver => log.error(s"graphql error: ${error.getMessage}"); InternalServerError(error.resolveError)
+      }
   }
 
   /**
