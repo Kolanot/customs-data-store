@@ -111,7 +111,7 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
     }
   }
 
-  private def executeGraphQLQuery(variables: Option[JsObject], queryAst: Document) = {
+  private def executeGraphQLQuery(variables: Option[JsObject], queryAst: Document)(implicit hc: HeaderCarrier) = {
     val exceptionHandler = ExceptionHandler { case (m, e: Upstream5xxResponse) =>
       HandledException(s"service unavailable: ${e.getMessage}", Map("exception" → m.fromString("Upstream5xxResponse")))
     }
