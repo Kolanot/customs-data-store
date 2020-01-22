@@ -31,7 +31,7 @@ import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.graphql.{GraphQL, TraderDataSchema}
 import uk.gov.hmrc.customs.datastore.services._
-import uk.gov.hmrc.http.{HeaderCarrier, ServiceUnavailableException}
+import uk.gov.hmrc.http.{HeaderCarrier, ServiceUnavailableException, Upstream5xxResponse}
 import uk.gov.hmrc.http.logging.RequestId
 
 import scala.collection.JavaConverters._
@@ -128,9 +128,9 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       when(mockEoriStore.findByEori(is(testEori)))
         .thenReturn(Future.successful(Some(traderData)))
       when(mockCustomerInfoService.getSubscriberInformation(is(testEori))(any()))
-        .thenReturn(Future.failed(new ServiceUnavailableException("Boom")))
+        .thenReturn(Future.failed(Upstream5xxResponse("ServiceUnavailable", 503, 503)))
 
-      val query = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { eoriHistory { eori }  } }"}"""
+      val query = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { notificationEmail { address }  } }"}"""
       val queryRequestId = "can-i-haz-eori-history"
       val request = authorizedRequest.withBody(Json.parse(query)).withHeaders("X-Request-ID" -> queryRequestId)
 

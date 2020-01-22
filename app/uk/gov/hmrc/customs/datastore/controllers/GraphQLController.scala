@@ -28,7 +28,7 @@ import sangria.marshalling.MarshallingUtil._
 import sangria.parser.QueryParser
 import uk.gov.hmrc.customs.datastore.graphql.GraphQL
 import uk.gov.hmrc.customs.datastore.services.ServerTokenAuthorization
-import uk.gov.hmrc.http.{HeaderCarrier, ServiceUnavailableException}
+import uk.gov.hmrc.http.{HeaderCarrier, ServiceUnavailableException, Upstream5xxResponse}
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -106,10 +106,10 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
           schema = graphQL.schema,
           queryAst = queryAst,
           variables = variables.getOrElse(Json.obj()),
-          exceptionHandler = ExceptionHandler { case (m, e: ServiceUnavailableException) => HandledException(s"service unavailable: ${e.getMessage}", Map("exception" → m.fromString("ServiceUnavailableException"))) }
+          exceptionHandler = ExceptionHandler { case (m, e: Upstream5xxResponse) => HandledException(s"service unavailable: ${e.getMessage}", Map("exception" → m.fromString("Upstream5xxResponse"))) }
         ).map { result =>
-          val isServiceUnavailable = (result \\ "exception").contains(JsString("ServiceUnavailableException"))
-          if(isServiceUnavailable) { log.error("graphql execute query failed with service unavailable"); ServiceUnavailable("Boom") }
+          val isServiceUnavailable = (result \\ "exception").contains(JsString("Upstream5xxResponse"))
+          if(isServiceUnavailable) { log.error("graphql execute query failed with service unavailable"); ServiceUnavailable("Upstream service is unavailable") }
           else Ok(result)
         }
         .recover {
