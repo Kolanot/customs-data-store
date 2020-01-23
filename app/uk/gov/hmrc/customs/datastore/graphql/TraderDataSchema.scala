@@ -103,6 +103,22 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,
         } yield traderData
 
       }
+    ),
+    Field(
+      name = "getEmail",
+      fieldType = OptionType(EmailType),
+      arguments = List(
+        Argument("eori", StringType)
+      ),
+      resolve = sangriaContext => {
+        val eori = sangriaContext.args.arg[String]("eori")
+        for {
+          maybeEmailData <- eoriStore.findByEori(eori).map { case Some(traderData) => traderData.notificationEmail }
+          isTraderEmailStored = maybeEmailData.isDefined
+          _ <- if (isTraderEmailStored && FeatureSwitch.DataStore.isEnabled()) Future.successful(true) else retrieveAndStoreCustomerInformation(eori)
+          emailData <- if (isTraderEmailStored) Future.successful(maybeEmailData) else eoriStore.findByEori(eori).map { case Some(traderData) => traderData.notificationEmail }
+        } yield emailData
+      }
     )
   )
 

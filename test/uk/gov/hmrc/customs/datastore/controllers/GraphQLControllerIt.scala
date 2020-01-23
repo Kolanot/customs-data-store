@@ -98,7 +98,7 @@ class GraphQLControllerIt extends WordSpec with MongoSpecSupport with MockitoSug
       val select = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { eoriHistory {eori} notificationEmail { address }  } }"}"""
 
       val result = await(for {
-        queryResult <-  controller.handleQuery.apply(authorizedRequest.withBody(Json.parse(select)))
+        queryResult <-  controller.handleRequest.apply(authorizedRequest.withBody(Json.parse(select)))
         byteString <- queryResult.body.consumeData(materializer)
         json <- Future.successful(Json.parse(byteString.utf8String))
       } yield json)
@@ -121,7 +121,7 @@ class GraphQLControllerIt extends WordSpec with MongoSpecSupport with MockitoSug
       val select = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { eoriHistory {eori} notificationEmail { address }  } }"}"""
 
       val result = await(for {
-        queryResult <-  controller.handleQuery.apply(authorizedRequest.withBody(Json.parse(select)))
+        queryResult <-  controller.handleRequest.apply(authorizedRequest.withBody(Json.parse(select)))
         byteString <- queryResult.body.consumeData(materializer)
         json <- Future.successful(Json.parse(byteString.utf8String))
       } yield json)
@@ -144,7 +144,7 @@ class GraphQLControllerIt extends WordSpec with MongoSpecSupport with MockitoSug
       val select = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { eoriHistory {eori} notificationEmail { address }  } }"}"""
 
       val result = await(for {
-        queryResult <-  controller.handleQuery.apply(authorizedRequest.withBody(Json.parse(select)))
+        queryResult <-  controller.handleRequest.apply(authorizedRequest.withBody(Json.parse(select)))
         byteString <- queryResult.body.consumeData(materializer)
         json <- Future.successful(Json.parse(byteString.utf8String))
       } yield json)
@@ -168,7 +168,7 @@ class GraphQLControllerIt extends WordSpec with MongoSpecSupport with MockitoSug
       val select = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { eoriHistory {eori} notificationEmail { address }  } }"}"""
 
       val result = await(for {
-        queryResult <-  controller.handleQuery.apply(authorizedRequest.withBody(Json.parse(select)))
+        queryResult <-  controller.handleRequest.apply(authorizedRequest.withBody(Json.parse(select)))
         byteString <- queryResult.body.consumeData(materializer)
         json <- Future.successful(Json.parse(byteString.utf8String))
       } yield json)
@@ -202,8 +202,8 @@ class GraphQLControllerIt extends WordSpec with MongoSpecSupport with MockitoSug
         .withHeaders("X-Request-ID" -> "can-i-haz-eori")
 
       val result = await(for {
-        _ <- controller.handleQuery.apply(mutationRequest)
-        queryResult <-  controller.handleQuery.apply(queryRequest)
+        _ <- controller.handleRequest.apply(mutationRequest)
+        queryResult <-  controller.handleRequest.apply(queryRequest)
         byteString <- queryResult.body.consumeData(materializer)
         json <- Future.successful(Json.parse(byteString.utf8String))
       } yield json)

@@ -27,11 +27,10 @@ import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain.onwire.{MdgSub09DataModel, Sub09Response}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, ServiceUnavailableException}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 
 class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with MockitoSugar with MockitoAnswerSugar with FutureAwaits with DefaultAwaitTimeout {
@@ -51,7 +50,7 @@ class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with Mockit
     implicit val hc: HeaderCarrier = HeaderCarrier()
   }
 
-  "The Service" should {
+  "getSubscriberInformation" should {
 
     "Return None when the timestamp is not available" in new SubscriptionServiceScenario {
       val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.withEmailNoTimestamp(testEori)).get
@@ -77,10 +76,9 @@ class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with Mockit
       verify(mockMetricsReporterService).withResponseTimeLogging(ArgumentMatchers.eq("mdg.get.company-information"))(any())(any())
     }
 
-    "log handle an error" in new SubscriptionServiceScenario {
-      when(mockHttp.GET[MdgSub09DataModel](any())(any(),any(),any())).thenReturn(Future.failed(new Exception("Boom")))
-      val res = Await.ready(service.getSubscriberInformation(testEori), 2 seconds)
-      res.value.get.isFailure mustBe true
+    "propagate ServiceUnavailableException" in new SubscriptionServiceScenario {
+      when(mockHttp.GET[MdgSub09DataModel](any())(any(),any(),any())).thenReturn(Future.failed(new ServiceUnavailableException("Boom")))
+      assertThrows[ServiceUnavailableException](await(service.getSubscriberInformation(testEori)))
     }
   }
 }
