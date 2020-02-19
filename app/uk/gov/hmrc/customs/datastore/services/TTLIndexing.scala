@@ -38,12 +38,14 @@ trait TTLIndexing[A, ID] {
   protected val ExpireAfterSeconds = "expireAfterSeconds"
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
-    logger.info(s"Creating time to live for entries in ${collection.name} to $expireAfterSeconds seconds")
     for {
       currentIndexes <- collection.indexesManager.list()
       _ <- deleteLastUpdatedIndex(currentIndexes)
       result <- Future.sequence((lastUpdatedIndex +: indexes).map{collection.indexesManager.ensure})
-    } yield result
+    } yield {
+      logger.info(s"Creating time to live for entries in ${collection.name} to $expireAfterSeconds seconds")
+      result
+    }
   }
 
   def getExpireAfterSecondsOptionOf(idx: Index): Long = idx.options.getAs[BSONLong](ExpireAfterSeconds).getOrElse(BSONLong(0)).as[Long]
