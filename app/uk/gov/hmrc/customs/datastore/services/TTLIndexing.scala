@@ -27,25 +27,23 @@ trait TTLIndexing[A, ID] {
 
   val expireAfterSeconds: Long
 
-  lazy val lastUpdatedIndex = Index(
+  lazy val lastUpdatedIndex: Index = Index(
     key = Seq(FieldLastUpdated -> IndexType.Ascending),
     name = Some(LastUpdatedIndex),
     options = BSONDocument(ExpireAfterSeconds -> expireAfterSeconds)
   )
 
   protected val FieldLastUpdated = "lastUpdated"
-  protected val LastUpdatedIndex = "lastUpdatedIndex"
-  protected val ExpireAfterSeconds = "expireAfterSeconds"
+  private val LastUpdatedIndex = "lastUpdatedIndex"
+  private val ExpireAfterSeconds = "expireAfterSeconds"
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
+    logger.info(s"Creating time to live for entries in ${collection.name} to $expireAfterSeconds seconds")
     for {
       currentIndexes <- collection.indexesManager.list()
       _ <- deleteLastUpdatedIndex(currentIndexes)
       result <- Future.sequence((lastUpdatedIndex +: indexes).map{collection.indexesManager.ensure})
-    } yield {
-      logger.info(s"Creating time to live for entries in ${collection.name} to $expireAfterSeconds seconds")
-      result
-    }
+    } yield result
   }
 
   def getExpireAfterSecondsOptionOf(idx: Index): Long = idx.options.getAs[BSONLong](ExpireAfterSeconds).getOrElse(BSONLong(0)).as[Long]

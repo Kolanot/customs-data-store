@@ -74,8 +74,6 @@ class TTLIndexingSpec extends WordSpec with MustMatchers with FutureAwaits with 
   "MongoTTL" should {
     "add all the indexes on first use" in {
       val mongoConnectorForTest: MongoConnector = MongoConnector("mongodb://127.0.0.1:27017/test-ttl")
-      val testDb =
-
         await(for {
           testDb <- successful(new MongoTTL(mongoConnectorForTest))
           indexes <- testDb.waitForIndexes(List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName),10)

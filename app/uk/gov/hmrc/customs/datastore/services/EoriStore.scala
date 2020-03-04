@@ -56,7 +56,8 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: App
 
   import Schema._
 
-  override val expireAfterSeconds: Long = appConfig.dbTimeToLive
+  // this must be lazy so that it is initialised when ReactiveRepository calls ensureIndexes() during construction...
+  override lazy val expireAfterSeconds: Long = appConfig.dbTimeToLiveInSeconds
 
   override def indexes = Seq(
     Index(Seq(EoriSearchKey -> IndexType.Ascending), name = Some(FieldEoriHistory + FieldEori + "Index"), unique = true, sparse = true)

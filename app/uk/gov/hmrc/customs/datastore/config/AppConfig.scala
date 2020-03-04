@@ -42,15 +42,16 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, val environme
     case false => baseUrl("mdg") / getConfString("mdg.companyInformationEndpoint", "config-error")
   }
 
-  val dbTimeToLive = getConfInt("mongodb.timeToLiveInSeconds", 30*24*60*60)
+  private val DEFAULT_TIME_TO_LIVE: Int = 30 * 24 * 60 * 60
+  val dbTimeToLiveInSeconds: Int = runModeConfiguration.getInt("mongodb.timeToLiveInSeconds").getOrElse(DEFAULT_TIME_TO_LIVE)
 
   //Remove duplicate / from urls read from config
-  implicit class URLLike(left: String) {
-    def /(right: String): String = checkEnding(left) + "/" + checkBeginning(right)
+  implicit class URLSyntacticSugar(left: String) {
+    def /(right: String): String = removeTrailingSlash(left) + "/" + removeLeadingSlash(right)
 
-    def checkEnding(in: String): String = if (in.lastIndexOf("/") == in.size - 1) in.take(in.size - 1) else in
+    def removeTrailingSlash(in: String): String = if (in.last == '/') in.dropRight(1) else in
 
-    def checkBeginning(in: String): String = if (in.indexOf("/") == 0) in.drop(1) else in
+    def removeLeadingSlash(in: String): String = if (in.head == '/') in.drop(1) else in
   }
 
 }
