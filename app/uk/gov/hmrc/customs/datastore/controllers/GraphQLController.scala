@@ -28,7 +28,7 @@ import sangria.marshalling.MarshallingUtil._
 import sangria.parser.QueryParser
 import uk.gov.hmrc.customs.datastore.graphql.GraphQL
 import uk.gov.hmrc.customs.datastore.services.ServerTokenAuthorization
-import uk.gov.hmrc.http.{HeaderCarrier, ServiceUnavailableException, Upstream5xxResponse}
+import uk.gov.hmrc.http.{GatewayTimeoutException, HeaderCarrier, Upstream5xxResponse}
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -112,8 +112,14 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
   }
 
   private def executeGraphQLQuery(variables: Option[JsObject], queryAst: Document)(implicit hc: HeaderCarrier) = {
-    val exceptionHandler = ExceptionHandler { case (m, e: Upstream5xxResponse) =>
-      HandledException(s"service unavailable: ${e.getMessage}", Map("exception" → m.fromString("Upstream5xxResponse")))
+    val UPSTREAM_ERROR = "UpstreamError"
+
+    val exceptionHandler = ExceptionHandler {
+      case (m, e: Upstream5xxResponse) =>
+        HandledException(s"service unavailable: ${e.getMessage}", Map("exception" → m.fromString(UPSTREAM_ERROR)))
+      case (m, e: GatewayTimeoutException) => {
+        HandledException(s"Gateway timeout: ${e.getMessage}", Map("exception" → m.fromString(UPSTREAM_ERROR)))
+      }
     }
 
     Executor.execute(
@@ -122,12 +128,13 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
       variables = variables.getOrElse(Json.obj()),
       exceptionHandler = exceptionHandler
     ).map { result =>
-        val isServiceUnavailable = (result \\ "exception").contains(JsString("Upstream5xxResponse"))
-        if (isServiceUnavailable) {
-          log.error("graphql execute query failed with service unavailable");
+      val maybeHandledExceptionMessage = (result \\ "exception").headOption
+      maybeHandledExceptionMessage match {
+        case Some(JsString(UPSTREAM_ERROR)) =>
+          log.error("graphql execute query failed due to an upstream error");
           ServiceUnavailable("Upstream service is unavailable")
-        }
-        else Ok(result)
+        case _ => Ok(result)
+      }
     }.recover {
         case error: QueryAnalysisError => log.error(s"graphql error: ${error.getMessage}"); BadRequest(error.resolveError)
         case error: ErrorWithResolver => log.error(s"graphql error: ${error.getMessage}"); InternalServerError(error.resolveError)

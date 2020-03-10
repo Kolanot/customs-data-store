@@ -31,7 +31,7 @@ import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.graphql.{GraphQL, TraderDataSchema}
 import uk.gov.hmrc.customs.datastore.services._
-import uk.gov.hmrc.http.{HeaderCarrier, ServiceUnavailableException, Upstream5xxResponse}
+import uk.gov.hmrc.http.{GatewayTimeoutException, HeaderCarrier, ServiceUnavailableException, Upstream5xxResponse}
 import uk.gov.hmrc.http.logging.RequestId
 
 import scala.collection.JavaConverters._
@@ -131,17 +131,67 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
       actualHeaderCarrier.getAllValues.asScala.map(_.requestId) mustBe List(Some(RequestId(queryRequestId)))
     }
 
-    "return SERVICE_UNAVAILABLE when getSubscriberInformation throws ServiceUnavailableException" in new GraphQLScenario() {
-      val traderData = TraderData(
-        Seq(EoriPeriod(testEori, None, None)), None)
+    "return 503 when getSubscriberInformation throws Upstream5xxResponse" in new GraphQLScenario() {
+      val traderData = TraderData(Seq(EoriPeriod(testEori, None, None)), None)
 
+      when(mockEoriStore.findByEori(is(testEori)))
+        .thenReturn(Future.successful(Some(traderData)))
       when(mockHistoryService.getHistory(is(testEori))(any(), any()))
         .thenReturn(Future.successful(Seq(EoriPeriod(testEori, Some("2010-01-20T00:00:00Z"), None))))
       when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
-      when(mockEoriStore.findByEori(is(testEori)))
-        .thenReturn(Future.successful(Some(traderData)))
       when(mockCustomerInfoService.getSubscriberInformation(is(testEori))(any()))
         .thenReturn(Future.failed(Upstream5xxResponse("ServiceUnavailable", 503, 503)))
+
+      val query = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { notificationEmail { address }  } }"}"""
+      val queryRequestId = "can-i-haz-eori-history"
+      val request = authorizedRequest.withBody(Json.parse(query)).withHeaders("X-Request-ID" -> queryRequestId)
+
+      val result = controller.handleRequest()(request)
+      status(result) mustBe SERVICE_UNAVAILABLE
+    }
+
+    "return 503 when getSubscriberInformation throws GatewayTimeoutException" in new GraphQLScenario() {
+      val traderData = TraderData(Seq(EoriPeriod(testEori, None, None)), None)
+
+      when(mockEoriStore.findByEori(is(testEori)))
+        .thenReturn(Future.successful(Some(traderData)))
+      when(mockHistoryService.getHistory(is(testEori))(any(), any()))
+        .thenReturn(Future.successful(Seq(EoriPeriod(testEori, Some("2010-01-20T00:00:00Z"), None))))
+      when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
+      when(mockCustomerInfoService.getSubscriberInformation(is(testEori))(any()))
+        .thenReturn(Future.failed(new GatewayTimeoutException("nope")))
+
+      val query = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { notificationEmail { address }  } }"}"""
+      val queryRequestId = "can-i-haz-eori-history"
+      val request = authorizedRequest.withBody(Json.parse(query)).withHeaders("X-Request-ID" -> queryRequestId)
+
+      val result = controller.handleRequest()(request)
+      status(result) mustBe SERVICE_UNAVAILABLE
+    }
+
+    "return 503 when getHistory throws Upstream5xxResponse" in new GraphQLScenario() {
+      val traderData = TraderData(Seq(EoriPeriod(testEori, None, None)), None)
+
+      when(mockEoriStore.findByEori(is(testEori)))
+        .thenReturn(Future.successful(Some(traderData)))
+      when(mockHistoryService.getHistory(is(testEori))(any(), any()))
+        .thenReturn(Future.failed(Upstream5xxResponse("ServiceUnavailable", 503, 503)))
+
+      val query = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { notificationEmail { address }  } }"}"""
+      val queryRequestId = "can-i-haz-eori-history"
+      val request = authorizedRequest.withBody(Json.parse(query)).withHeaders("X-Request-ID" -> queryRequestId)
+
+      val result = controller.handleRequest()(request)
+      status(result) mustBe SERVICE_UNAVAILABLE
+    }
+
+    "return 503 when getHistory throws GatewayTimeoutException" in new GraphQLScenario() {
+      val traderData = TraderData(Seq(EoriPeriod(testEori, None, None)), None)
+
+      when(mockEoriStore.findByEori(is(testEori)))
+        .thenReturn(Future.successful(Some(traderData)))
+      when(mockHistoryService.getHistory(is(testEori))(any(), any()))
+        .thenReturn(Future.failed(new GatewayTimeoutException("nope")))
 
       val query = s"""{ "query": "query { byEori( eori: \\"$testEori\\") { notificationEmail { address }  } }"}"""
       val queryRequestId = "can-i-haz-eori-history"
