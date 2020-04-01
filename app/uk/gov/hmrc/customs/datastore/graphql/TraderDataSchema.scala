@@ -117,6 +117,7 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,
           isTraderEmailStored = maybeEmailData.isDefined
           _ <- if (isTraderEmailStored && FeatureSwitch.DataStore.isEnabled()) Future.successful(true) else retrieveAndStoreCustomerInformation(eori)
           emailData <- if (isTraderEmailStored) Future.successful(maybeEmailData) else eoriStore.findByEori(eori).map { case Some(traderData) => traderData.notificationEmail }
+          _  <- Future.successful(log.info(s"no verified email address for user $eori")) if emailData.isEmpty
         } yield emailData
       }
     )
