@@ -43,7 +43,9 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
   val eoriStore = new EoriStore(reactiveMongo,appConfig)
 
   val verifiedEmail = Some(NotificationEmail(Some("test@email.uk"), Some("timestamp")))
-  val unverifiedEmail = Some(NotificationEmail(Some("test@email.uk"), None))
+  val unverifiedEmailNoTimestamp = Some(NotificationEmail(Some("test@email.uk"), None))
+  val unverifiedEmailNoAddress = Some(NotificationEmail(None, Some("timestamp")))
+  val unverifiedEmailNoAddressNoTimeStamp: Option[NotificationEmail] = Some(NotificationEmail(None, None))
   val noEmail = None
 
 
@@ -114,7 +116,7 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
     "not return trader data with an email address when an historic eoris is updated with an unverified email" in {
       val noEmail = None
       await(for {
-        _ <- eoriStore.upsertByEori(EoriPeriod(period1.eori, None, None), unverifiedEmail)
+        _ <- eoriStore.upsertByEori(EoriPeriod(period1.eori, None, None), unverifiedEmailNoAddress)
         _ <- eoriStore.updateHistoricEoris(Seq(period1, period2))
         _ <- eoriStore.updateHistoricEoris(Seq(period5, period6))
         eoris1 <- eoriStore.findByEori(period1.eori)
@@ -195,17 +197,42 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
       } yield ())
     }
 
-    "insert eori with unverified notification email" in {
+    "insert eori with no address as an unverified notification email" in {
       val eoriPeriod = EoriPeriod(eori1, Some("date1"), Some("date2"))
-      val email = unverifiedEmail
+      val email = unverifiedEmailNoAddress
       val expected = TraderData(Seq(EoriPeriod(eori1, Some("date1"), Some("date2"))), noEmail)
 
       await(for {
-        _ <- eoriStore.upsertByEori(eoriPeriod, unverifiedEmail)
+        _ <- eoriStore.upsertByEori(eoriPeriod, unverifiedEmailNoAddress)
         r1 <- eoriStore.findByEori(eori1)
         _ <- toFuture(r1.get mustBe expected)
       } yield ())
     }
+
+    "insert eori with no timestamp as an unverified notification email" in {
+      val eoriPeriod = EoriPeriod(eori1, Some("date1"), Some("date2"))
+      val email = unverifiedEmailNoTimestamp
+      val expected = TraderData(Seq(EoriPeriod(eori1, Some("date1"), Some("date2"))), noEmail)
+
+      await(for {
+        _ <- eoriStore.upsertByEori(eoriPeriod, unverifiedEmailNoTimestamp)
+        r1 <- eoriStore.findByEori(eori1)
+        _ <- toFuture(r1.get mustBe expected)
+      } yield ())
+    }
+
+    "insert eori with no address and no timestamp as an unverified notification email" in {
+      val eoriPeriod = EoriPeriod(eori1, Some("date1"), Some("date2"))
+      val email = unverifiedEmailNoAddressNoTimeStamp
+      val expected = TraderData(Seq(EoriPeriod(eori1, Some("date1"), Some("date2"))), noEmail)
+
+      await(for {
+        _ <- eoriStore.upsertByEori(eoriPeriod, unverifiedEmailNoAddressNoTimeStamp)
+        r1 <- eoriStore.findByEori(eori1)
+        _ <- toFuture(r1.get mustBe expected)
+      } yield ())
+    }
+
 
     "upsert the validFrom, validUntil, email and timestamp fields " in {
       val eoriPeriod = EoriPeriod(eori1, Some("date1"), Some("date2"))

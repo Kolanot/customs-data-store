@@ -86,13 +86,14 @@ class EoriStore @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: App
   private def lastUpdatedChangeSet() = FieldLastUpdated -> toJsFieldJsValueWrapper(DateTime.now(DateTimeZone.UTC))(ReactiveMongoFormats.dateTimeWrite)
 
   private def emailChangeSet(email: Option[NotificationEmail]) = {
-    if (email.flatMap(_.timestamp).isDefined) {
-      Seq(
-        (EmailAddressSearchKey -> email.flatMap(_.address)),
-        (EmailTimestampSearchKey -> email.flatMap(_.timestamp))
-      ).collect { case (field, Some(value)) => (field -> toJsFieldJsValueWrapper(value)) }
-    } else
-      Seq.empty
+    val changeSet = for {
+      emailAddress <- email.flatMap(_.address)
+      timeStamp <- email.flatMap(_.timestamp)
+    } yield Seq(
+      EmailAddressSearchKey -> toJsFieldJsValueWrapper(emailAddress),
+      EmailTimestampSearchKey -> toJsFieldJsValueWrapper(timeStamp)
+    )
+    changeSet.getOrElse(Seq.empty)
   }
 
   private def eoriPeriodChangeSet(eoriPeriod: EoriPeriod) = {
