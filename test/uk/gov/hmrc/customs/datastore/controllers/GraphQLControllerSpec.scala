@@ -31,8 +31,8 @@ import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.graphql.{GraphQL, TraderDataSchema}
 import uk.gov.hmrc.customs.datastore.services._
-import uk.gov.hmrc.http.{GatewayTimeoutException, HeaderCarrier, ServiceUnavailableException, Upstream5xxResponse}
 import uk.gov.hmrc.http.logging.RequestId
+import uk.gov.hmrc.http.{GatewayTimeoutException, HeaderCarrier, ServiceUnavailableException, Upstream5xxResponse}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
@@ -60,7 +60,6 @@ class GraphQLControllerSpec extends PlaySpec with MongoSpecSupport with DefaultA
     val configuration = Configuration.load(env)
     val appConfig = new AppConfig(configuration, env)
     val authConnector = new ServerTokenAuthorization(appConfig)
-    FeatureSwitch.DataStore.enable()
 
     val schema = new TraderDataSchema(mockEoriStore, mockHistoryService, mockCustomerInfoService)
     val graphQL = new GraphQL(schema)
