@@ -74,15 +74,12 @@ class GraphQLControllerIt extends WordSpec with MongoSpecSupport with MockitoSug
     val eoriStore = new EoriStore(new ReactiveMongoComponent {
       override def mongoConnector: MongoConnector = mongoConnectorForTest
     }, appConfig)
-    FeatureSwitch.DataStore.enable()
 
     val schema = new TraderDataSchema(eoriStore, mockHistoryService, mockCustomerInfoService)
     val graphQL = new GraphQL(schema)
     val controller = new GraphQLController(authConnector, graphQL)
     val authorizedRequest = FakeRequest(POST, "/graphql").withHeaders("Content-Type" -> "application/json", "Authorization" -> "Bearer secret-token")
-
   }
-
 
   "GraphQL Queries" should {
     "not call the HistoricEoriService and the SubscriptionInfoService if we already have them cached" in new GraphQLScenario() {
