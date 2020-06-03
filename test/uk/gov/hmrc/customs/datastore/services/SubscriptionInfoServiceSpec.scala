@@ -68,6 +68,14 @@ class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with Mockit
       response mustBe Some(MdgSub09DataModel(Some("mickey.mouse@disneyland.com"), Some("2019-09-06T12:30:59Z")))
     }
 
+    "Return None when the email is not available" in new SubscriptionServiceScenario {
+      val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.noEmailNoTimestamp(testEori)).get
+      when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
+
+      val response = await(service.getSubscriberInformation(testEori))
+      response mustBe None
+    }
+
     "log response time metric" in new SubscriptionServiceScenario {
       val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.withEmailAndTimestamp(testEori)).get
       when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
