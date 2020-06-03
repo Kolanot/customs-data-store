@@ -22,7 +22,7 @@ import org.mockito.Mockito.{verify, when}
 import org.mockito.invocation.InvocationOnMock
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{MustMatchers, WordSpec}
-import play.api.libs.json.JsString
+import play.api.libs.json.{JsString, JsValue}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
@@ -48,37 +48,36 @@ class SubscriptionInfoServiceSpec extends WordSpec with MustMatchers with Mockit
     val service = new SubscriptionInfoService(appConfig, mockHttp, mockMetricsReporterService)
     implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
     implicit val hc: HeaderCarrier = HeaderCarrier()
+
+    def mdgResponse(value: JsValue) = MdgSub09DataModel.sub09Reads.reads(value).get
   }
 
   "getSubscriberInformation" should {
 
-    "Return None when the timestamp is not available" in new SubscriptionServiceScenario {
-      val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.withEmailNoTimestamp(testEori)).get
-      when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
+    "return None when the timestamp is not available" in new SubscriptionServiceScenario {
+      val response = mdgResponse(Sub09Response.withEmailNoTimestamp(testEori))
+      when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(response))
 
-      val response = await(service.getSubscriberInformation(testEori))
-      response mustBe None
+      await(service.getSubscriberInformation(testEori)) mustBe None
     }
 
-    "Return Some, when the timestamp is available" in new SubscriptionServiceScenario {
-      val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.withEmailAndTimestamp(testEori)).get
-      when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
+    "return Some, when the timestamp is available" in new SubscriptionServiceScenario {
+      val response = mdgResponse(Sub09Response.withEmailAndTimestamp(testEori))
+      when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(response))
 
-      val response = await(service.getSubscriberInformation(testEori))
-      response mustBe Some(MdgSub09DataModel(Some("mickey.mouse@disneyland.com"), Some("2019-09-06T12:30:59Z")))
+      await(service.getSubscriberInformation(testEori)) mustBe Some(MdgSub09DataModel(Some("mickey.mouse@disneyland.com"), Some("2019-09-06T12:30:59Z")))
     }
 
-    "Return None when the email is not available" in new SubscriptionServiceScenario {
-      val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.noEmailNoTimestamp(testEori)).get
-      when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
+    "return None when the email is not available" in new SubscriptionServiceScenario {
+      val response = mdgResponse(Sub09Response.noEmailNoTimestamp(testEori))
+      when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(response))
 
-      val response = await(service.getSubscriberInformation(testEori))
-      response mustBe None
+      await(service.getSubscriberInformation(testEori)) mustBe None
     }
 
     "log response time metric" in new SubscriptionServiceScenario {
-      val mdgResponse = MdgSub09DataModel.sub09Reads.reads(Sub09Response.withEmailAndTimestamp(testEori)).get
-      when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(mdgResponse))
+      val response = mdgResponse(Sub09Response.withEmailAndTimestamp(testEori))
+      when(mockHttp.GET[MdgSub09DataModel](any())(any(), any(), any())).thenReturn(Future.successful(response))
 
       await(service.getSubscriberInformation(testEori))
       verify(mockMetricsReporterService).withResponseTimeLogging(ArgumentMatchers.eq("mdg.get.company-information"))(any())(any())
