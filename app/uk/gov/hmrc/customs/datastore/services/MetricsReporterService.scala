@@ -19,7 +19,6 @@ package uk.gov.hmrc.customs.datastore.services
 import java.time.OffsetDateTime
 
 import com.google.inject.Inject
-import com.kenshoo.play.metrics.Metrics
 import javax.inject.Singleton
 import play.api.http.Status
 import services.DateTimeService

@@ -17,7 +17,7 @@
 package uk.gov.hmrc.customs.datastore.config
 
 import javax.inject.{Inject, Singleton}
-import play.api.{Configuration, Environment}
+import play.api.Configuration
 import uk.gov.hmrc.customs.datastore.services.FeatureSwitch
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 

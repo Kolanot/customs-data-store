@@ -16,9 +16,7 @@
 
 package uk.gov.hmrc.customs.datastore.services
 
-import org.scalatest.{MustMatchers, WordSpec}
 import play.api.libs.json.Json
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.datastore.utils.SpecBase

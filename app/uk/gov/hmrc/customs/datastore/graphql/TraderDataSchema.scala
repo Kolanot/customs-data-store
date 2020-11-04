@@ -26,8 +26,7 @@ import uk.gov.hmrc.customs.datastore.services.{EoriHistoryService, EoriStore, Su
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 trait InputUnmarshallerGenerator {
 

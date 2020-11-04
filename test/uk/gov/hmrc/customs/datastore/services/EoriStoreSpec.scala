@@ -17,9 +17,7 @@
 package uk.gov.hmrc.customs.datastore.services
 
 
-import org.scalatest.{Assertion, BeforeAndAfterEach, MustMatchers, WordSpec}
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+import org.scalatest.Assertion
 import play.api.{Application, inject}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.datastore.domain._

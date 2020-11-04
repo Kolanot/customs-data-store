@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.customs.datastore.utils
 
-import org.scalatest.{BeforeAndAfterEach, MustMatchers, OptionValues, WordSpec}
 import org.scalatest.mockito.MockitoSugar
+import org.scalatest.{BeforeAndAfterEach, MustMatchers, OptionValues, WordSpec}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import uk.gov.hmrc.customs.datastore.services.MongoSpecSupport

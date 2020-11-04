@@ -20,7 +20,6 @@ import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{any, eq => eqTo}
 import org.mockito.Mockito.{verify, when}
 import play.api.inject.bind
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{POST, _}
@@ -28,8 +27,8 @@ import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.graphql.TraderDataSchema
 import uk.gov.hmrc.customs.datastore.services._
 import uk.gov.hmrc.customs.datastore.utils.SpecBase
-import uk.gov.hmrc.http.logging.RequestId
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.logging.RequestId
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.concurrent.Future

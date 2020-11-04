@@ -19,15 +19,11 @@ package uk.gov.hmrc.customs.datastore.controllers
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{any, eq => eqTo}
 import org.mockito.Mockito.{never, times, verify, when}
-import org.scalatest.OptionValues.convertOptionToValuable
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{MustMatchers, WordSpec}
 import play.api.inject.bind
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.libs.json.{JsString, Json}
-import play.api.test.Helpers.{POST, route, running, status, _}
-import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
+import play.api.test.FakeRequest
+import play.api.test.Helpers.{POST, route, running, _}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.datastore.domain.onwire.MdgSub09DataModel
 import uk.gov.hmrc.customs.datastore.domain.{EmailAddress, EoriPeriod, NotificationEmail, TraderData}

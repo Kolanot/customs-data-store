@@ -23,7 +23,7 @@ import com.kenshoo.play.metrics.Metrics
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{verify, when}
 import play.api.http.Status
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import scala.concurrent.ExecutionContext.Implicits.global
 import services.DateTimeService
 import uk.gov.hmrc.customs.datastore.utils.SpecBase
 import uk.gov.hmrc.http._

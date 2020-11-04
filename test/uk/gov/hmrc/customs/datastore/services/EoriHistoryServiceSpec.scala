@@ -21,14 +21,11 @@ import java.time.LocalDate
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.any
 import org.mockito.Mockito.when
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FlatSpec, MustMatchers}
 import play.api
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.Helpers.running
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.domain.onwire._
@@ -73,7 +70,7 @@ class EoriHistoryServiceSpec extends SpecBase {
 
   class ETMPScenario() {
 
-    implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
+    implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
     implicit val implicitHeaderCarrier: HeaderCarrier = HeaderCarrier(
       authorization = Option(Authorization("myAwesomeCrypto")),
       otherHeaders = List(("X-very-important", "foo"))

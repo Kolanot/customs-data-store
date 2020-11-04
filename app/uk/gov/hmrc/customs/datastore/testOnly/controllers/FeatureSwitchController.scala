@@ -33,7 +33,6 @@
 package uk.gov.hmrc.customs.datastore.testOnly.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.i18n.MessagesApi
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.services.FeatureSwitch
