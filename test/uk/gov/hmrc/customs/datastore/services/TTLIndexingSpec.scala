@@ -21,6 +21,7 @@ import play.api.libs.json.Json
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
+import uk.gov.hmrc.customs.datastore.utils.SpecBase
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.mongo.{MongoConnector, ReactiveRepository}
 
@@ -29,7 +30,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
 
-class TTLIndexingSpec extends WordSpec with MustMatchers with FutureAwaits with DefaultAwaitTimeout {
+class TTLIndexingSpec extends SpecBase {
 
   case class TestDataModel(content: String)
 
@@ -51,7 +52,7 @@ class TTLIndexingSpec extends WordSpec with MustMatchers with FutureAwaits with 
       Index(Seq("someFieldName" -> IndexType.Ascending), name = Some(ExtraIndexName), unique = true, sparse = true))
 
     @tailrec
-    final def waitForIndexes(expectedIndexNames:List[String], expectedExpireAfterSeconds: Int, tryCount:Int = 100): Future[List[Index]] = {
+    final def waitForIndexes(expectedIndexNames: List[String], expectedExpireAfterSeconds: Int, tryCount: Int = 100): Future[List[Index]] = {
       val indexes = await(collection.indexesManager.list())
       if (tryCount > 0) {
         val actualIndexNames = indexes.map(_.eventualName).sorted
@@ -74,12 +75,12 @@ class TTLIndexingSpec extends WordSpec with MustMatchers with FutureAwaits with 
   "MongoTTL" should {
     "add all the indexes on first use" in {
       val mongoConnectorForTest: MongoConnector = MongoConnector("mongodb://127.0.0.1:27017/test-ttl")
-        await(for {
-          testDb <- successful(new MongoTTL(mongoConnectorForTest))
-          indexes <- testDb.waitForIndexes(List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName),10)
-          _ <- successful(indexes.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName))
-          _ <- testDb.drop
-        } yield ())
+      await(for {
+        testDb <- successful(new MongoTTL(mongoConnectorForTest))
+        indexes <- testDb.waitForIndexes(List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName), 10)
+        _ <- successful(indexes.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName))
+        _ <- testDb.drop
+      } yield ())
     }
 
     "work if expireAfterSeconds did not change" in {
@@ -87,11 +88,11 @@ class TTLIndexingSpec extends WordSpec with MustMatchers with FutureAwaits with 
 
       await(for {
         testDb1 <- successful(new MongoTTL(mongoConnectorForTest, 10))
-        indexes1 <- testDb1.waitForIndexes(List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName),10)
+        indexes1 <- testDb1.waitForIndexes(List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName), 10)
         _ <- successful(indexes1.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName))
         _ <- successful(indexes1.find(index => index.eventualName == "lastUpdatedIndex").map(testDb1.getExpireAfterSecondsOptionOf) mustBe Some(10))
         testDb2 <- successful(new MongoTTL(mongoConnectorForTest, 10))
-        indexes2 <- testDb2.waitForIndexes(List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName),10)
+        indexes2 <- testDb2.waitForIndexes(List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName), 10)
         _ <- successful(indexes2.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName))
         _ <- successful(indexes2.find(index => index.eventualName == "lastUpdatedIndex").map(testDb2.getExpireAfterSecondsOptionOf) mustBe Some(10))
         _ <- testDb1.drop
@@ -104,11 +105,11 @@ class TTLIndexingSpec extends WordSpec with MustMatchers with FutureAwaits with 
 
       await(for {
         testDb1 <- successful(new MongoTTL(mongoConnectorForTest, 10))
-        indexes1 <- testDb1.waitForIndexes(List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName),10)
+        indexes1 <- testDb1.waitForIndexes(List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName), 10)
         _ <- successful(indexes1.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName))
         _ <- successful(indexes1.find(index => index.eventualName == "lastUpdatedIndex").map(testDb1.getExpireAfterSecondsOptionOf) mustBe Some(10))
         testDb2 <- successful(new MongoTTL(mongoConnectorForTest, 20))
-        indexes2 <- testDb2.waitForIndexes(List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName),20)
+        indexes2 <- testDb2.waitForIndexes(List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName), 20)
         _ <- successful(indexes2.map(_.eventualName).sorted mustBe List(DefaultIndexName, "lastUpdatedIndex", ExtraIndexName))
         _ <- successful(indexes2.find(index => index.eventualName == "lastUpdatedIndex").map(testDb2.getExpireAfterSecondsOptionOf) mustBe Some(20))
         _ <- testDb1.drop

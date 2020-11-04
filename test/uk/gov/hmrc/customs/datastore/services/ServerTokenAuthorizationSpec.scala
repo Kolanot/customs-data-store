@@ -16,40 +16,49 @@
 
 package uk.gov.hmrc.customs.datastore.services
 
-import org.scalatest.{MustMatchers, WordSpec}
 import play.api.http.Status._
-import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
-import play.api.{Configuration, Environment}
-import uk.gov.hmrc.customs.datastore.config.AppConfig
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.test.FakeRequest
+import play.api.test.Helpers.running
+import uk.gov.hmrc.customs.datastore.utils.SpecBase
 
-class ServerTokenAuthorizationSpec extends WordSpec with MustMatchers with FutureAwaits with DefaultAwaitTimeout{
-
-  class ServerTokenAuthorizationScenario() {
-    val env = Environment.simple()
-    val configuration = Configuration.load(env)
-    implicit val appConfig = new AppConfig(configuration, env)
-
-    val service = new ServerTokenAuthorization(appConfig)
-  }
+class ServerTokenAuthorizationSpec extends SpecBase {
 
   "ServerTokenAuthorization" should {
-    "Reject if no Authorization header was provided" in new ServerTokenAuthorizationScenario {
-      val req = FakeRequest()
-      val result = await(service.filter(req))
-      result.get.header.status  mustBe UNAUTHORIZED
+    "Reject if no Authorization header was provided" in  {
+
+      val app = new GuiceApplicationBuilder().build()
+      val service = app.injector.instanceOf[ServerTokenAuthorization]
+
+      running(app) {
+        val req = FakeRequest()
+        val result = await(service.filter(req))
+        result.get.header.status  mustBe UNAUTHORIZED
+      }
     }
 
-    "Reject invalid Authorization token" in new ServerTokenAuthorizationScenario {
-      val req = FakeRequest().withHeaders("Authorization" -> "invalid")
-      val result = await(service.filter(req))
-      result.get.header.status  mustBe UNAUTHORIZED
+    "Reject invalid Authorization token" in {
+
+      val app = new GuiceApplicationBuilder().build()
+      val service = app.injector.instanceOf[ServerTokenAuthorization]
+
+      running (app) {
+        val req = FakeRequest().withHeaders("Authorization" -> "invalid")
+        val result = await(service.filter(req))
+        result.get.header.status mustBe UNAUTHORIZED
+      }
     }
 
-    "Accept valid Authorization token" in new ServerTokenAuthorizationScenario {
-      val req = FakeRequest().withHeaders("Authorization" -> "Bearer secret-token")
-      val result = await(service.filter(req))
-      result mustBe None
-    }
+    "Accept valid Authorization token" in {
 
+      val app = new GuiceApplicationBuilder().build()
+      val service = app.injector.instanceOf[ServerTokenAuthorization]
+
+      running (app) {
+        val req = FakeRequest().withHeaders("Authorization" -> "Bearer secret-token")
+        val result = await(service.filter(req))
+        result mustBe None
+      }
+    }
   }
 }

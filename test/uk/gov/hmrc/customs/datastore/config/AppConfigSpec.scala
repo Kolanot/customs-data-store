@@ -17,38 +17,40 @@
 package uk.gov.hmrc.customs.datastore.config
 
 import org.scalatest.{FlatSpec, MustMatchers}
-import play.api.{Configuration, Environment}
+import play.api.{Configuration, Environment, Mode}
+import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
 
 class AppConfigSpec extends FlatSpec with MustMatchers {
 
   class AppConfigScenario {
     val env = Environment.simple()
     val configuration = Configuration.load(env)
+    val servicesConfig = new ServicesConfig(configuration, new RunMode(configuration, Mode.Test))
   }
 
   it should "remove left hand side slash" in new AppConfigScenario {
-    val appConfig = new AppConfig(configuration,env) {
+    val appConfig = new AppConfig(configuration, servicesConfig) {
       val url = "http://localhost/" / "abcd"
       url mustBe "http://localhost/abcd"
     }
   }
 
   it should "remove right hand side slash" in new AppConfigScenario {
-    val appConfig = new AppConfig(configuration,env) {
+    val appConfig = new AppConfig(configuration, servicesConfig) {
       val url = "http://localhost" / "/abcd"
       url mustBe "http://localhost/abcd"
     }
   }
 
   it should "remove left and right hand side slashes" in new AppConfigScenario {
-    val appConfig = new AppConfig(configuration,env) {
+    val appConfig = new AppConfig(configuration, servicesConfig) {
       val url = "http://localhost/" / "/abcd"
       url mustBe "http://localhost/abcd"
     }
   }
 
   it should "No slashes" in new AppConfigScenario {
-    val appConfig = new AppConfig(configuration,env) {
+    val appConfig = new AppConfig(configuration, servicesConfig) {
       val url = "http://localhost" / "abcd"
       url mustBe "http://localhost/abcd"
     }

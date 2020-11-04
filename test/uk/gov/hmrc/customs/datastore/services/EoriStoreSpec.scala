@@ -18,17 +18,18 @@ package uk.gov.hmrc.customs.datastore.services
 
 
 import org.scalatest.{Assertion, BeforeAndAfterEach, MustMatchers, WordSpec}
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
-import play.api.{Configuration, Environment}
+import play.api.{Application, inject}
 import play.modules.reactivemongo.ReactiveMongoComponent
-import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.domain._
+import uk.gov.hmrc.customs.datastore.utils.SpecBase
 import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport with DefaultAwaitTimeout with FutureAwaits with BeforeAndAfterEach {
+class EoriStoreSpec extends SpecBase {
 
   override def beforeEach: Unit = {
     await(eoriStore.removeAll())
@@ -37,10 +38,12 @@ class EoriStoreSpec extends WordSpec with MustMatchers with MongoSpecSupport wit
   val reactiveMongo = new ReactiveMongoComponent {
     override def mongoConnector: MongoConnector = mongoConnectorForTest
   }
-  val env = Environment.simple()
-  val configuration = Configuration.load(env)
-  val appConfig = new AppConfig(configuration, env)
-  val eoriStore = new EoriStore(reactiveMongo,appConfig)
+
+  private val app: Application = application.overrides(
+    inject.bind[ReactiveMongoComponent].toInstance(reactiveMongo)
+  ).build()
+
+  val eoriStore = app.injector.instanceOf[EoriStore]
 
   val verifiedEmail = Some(NotificationEmail(Some("test@email.uk"), Some("timestamp")))
   val unverifiedEmailNoTimestamp = Some(NotificationEmail(Some("test@email.uk"), None))

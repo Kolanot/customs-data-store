@@ -19,19 +19,22 @@ package uk.gov.hmrc.customs.datastore.services
 import com.google.inject.Singleton
 import javax.inject.Inject
 import play.api.mvc.Results._
-import play.api.mvc.{ActionBuilder, ActionFilter, Request, Result}
+import play.api.mvc.{ActionBuilder, ActionFilter, AnyContent, BodyParsers, Request, Result}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ServerTokenAuthorization @Inject()(appConfig: AppConfig) extends ActionBuilder[Request] with ActionFilter[Request] {
+class ServerTokenAuthorization @Inject()(
+                                          appConfig: AppConfig,
+                                          val parser: BodyParsers.Default
+                                        )(implicit val executionContext: ExecutionContext) extends ActionBuilder[Request, AnyContent] with ActionFilter[Request] {
   override def filter[A](request: Request[A]): Future[Option[Result]] = {
     val incomingAuthHeader = request.headers.toMap.getOrElse("Authorization", Nil)
     val serverToken = appConfig.serverToken
 
     incomingAuthHeader.find(_ == serverToken) match {
-      case Some(token) => Future.successful(None)
+      case Some(_) => Future.successful(None)
       case _ => Future.successful(Some(Unauthorized("Invalid server token provided")))
     }
   }
