@@ -18,7 +18,7 @@ package uk.gov.hmrc.customs.datastore.controllers
 
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{any, eq => eqTo}
-import org.mockito.Mockito.{verify, when}
+import org.mockito.Mockito.{never, verify, when}
 import play.api.inject.bind
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
@@ -296,6 +296,97 @@ class GraphQLControllerSpec extends SpecBase {
 
         when(mockCustomerInfoService.getSubscriberInformation(any())(any())).thenReturn(Future.failed(new ServiceUnavailableException("Boom")))
         assertThrows[ServiceUnavailableException](await(schema.retrieveAndStoreCustomerInformation(testEori)))
+      }
+    }
+  }
+
+  "GraphQL Mutations" should {
+    "Insert by Eori" in new Setup {
+      val mockEoriStore: EoriStore = mock[EoriStore]
+      val mockHistoryService: EoriHistoryService = mock[EoriHistoryService]
+
+      when(mockEoriStore.upsertByEori(any(), any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
+
+      when(mockHistoryService.getHistory(eqTo(testEori))(any(), any()))
+        .thenReturn(Future.successful(Seq(EoriPeriod(testEori, Some("1987.03.20"), None))))
+
+      private val app = application.overrides(
+        bind[EoriStore].toInstance(mockEoriStore),
+        bind[EoriHistoryService].toInstance(mockHistoryService),
+        bind[MetricsReporterService].toInstance(mockMetricsReporterService)
+      ).build()
+
+      running(app) {
+        val query = s"""{"query" : "mutation {byEori(eoriHistory:{eori:\\"$testEori\\" validFrom:\\"$testValidFrom\\" validUntil:\\"$testValidUntil\\"}, notificationEmail: {address: \\"$testEmail\\", timestamp: \\"$testTimestamp\\"} )}" }"""
+        val request = authorizedRequest.withBody(Json.parse(query))
+
+
+        val result = route(app, request).value
+        contentAsString(result) must include("data")
+        contentAsString(result) mustNot include("errors")
+
+        val eoriPeriod = EoriPeriod(testEori, Some(testValidFrom), Some(testValidUntil))
+        val email = NotificationEmail(Some(testEmail), Some(testTimestamp))
+        verify(mockEoriStore).upsertByEori(eoriPeriod, Some(email))
+      }
+    }
+
+    "Insert an EORI with no email address" in new Setup {
+      val mockEoriStore: EoriStore = mock[EoriStore]
+      val mockHistoryService: EoriHistoryService = mock[EoriHistoryService]
+
+      when(mockEoriStore.upsertByEori(any(), any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
+      when(mockHistoryService.getHistory(eqTo(testEori))(any(), any()))
+        .thenReturn(Future.successful(Seq(EoriPeriod(testEori, Some("1987.03.20"), None))))
+
+      private val app = application.overrides(
+        bind[EoriStore].toInstance(mockEoriStore),
+        bind[EoriHistoryService].toInstance(mockHistoryService),
+        bind[MetricsReporterService].toInstance(mockMetricsReporterService)
+      ).build()
+
+
+      running(app) {
+        val query = s"""{"query" : "mutation {byEori(eoriHistory:{eori:\\"$testEori\\" validFrom:\\"$testValidFrom\\" validUntil:\\"$testValidUntil\\"} )}" }"""
+        val request = authorizedRequest.withBody(Json.parse(query))
+        val result = route(app, request).value
+        contentAsString(result) must include("data")
+        contentAsString(result) mustNot include("errors")
+
+        val eoriPeriod = EoriPeriod(testEori, Some(testValidFrom), Some(testValidUntil))
+        verify(mockEoriStore).upsertByEori(eoriPeriod, None)
+      }
+    }
+
+    "Return an error response when queried without an EORI" in new Setup {
+
+      val mockEoriStore: EoriStore = mock[EoriStore]
+      val mockHistoryService: EoriHistoryService = mock[EoriHistoryService]
+
+      when(mockEoriStore.upsertByEori(any(), any())).thenReturn(Future.successful(true))
+      when(mockEoriStore.updateHistoricEoris(any())).thenReturn(Future.successful(true))
+      when(mockHistoryService.getHistory(eqTo(testEori))(any(), any()))
+        .thenReturn(Future.successful(Seq(EoriPeriod(testEori, Some("1987.03.20"), None))))
+
+      private val app = application.overrides(
+        bind[EoriStore].toInstance(mockEoriStore),
+        bind[EoriHistoryService].toInstance(mockHistoryService),
+        bind[MetricsReporterService].toInstance(mockMetricsReporterService)
+      ).build()
+
+      running(app) {
+        val query = s"""{"query" : "mutation {byEori(notificationEmail: {address: \\"$testEmail\\", timestamp: \\"$testTimestamp\\"} )}" }"""
+        val request = authorizedRequest.withBody(Json.parse(query))
+        val result = route(app, request).value
+        contentAsString(result) must include("data")
+        contentAsString(result) must include("errors")
+        contentAsString(result) must include("not provided")
+
+        verify(mockHistoryService, never()).getHistory(any())(any(), any())
+        verify(mockEoriStore, never()).upsertByEori(any(), any())
+        verify(mockEoriStore, never()).updateHistoricEoris(any())
       }
     }
   }
