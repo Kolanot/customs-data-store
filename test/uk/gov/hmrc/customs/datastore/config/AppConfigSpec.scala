@@ -18,14 +18,14 @@ package uk.gov.hmrc.customs.datastore.config
 
 import org.scalatest.{FlatSpec, MustMatchers}
 import play.api.{Configuration, Environment, Mode}
-import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 class AppConfigSpec extends FlatSpec with MustMatchers {
 
   class AppConfigScenario {
     val env = Environment.simple()
     val configuration = Configuration.load(env)
-    val servicesConfig = new ServicesConfig(configuration, new RunMode(configuration, Mode.Test))
+    val servicesConfig = new ServicesConfig(configuration)
   }
 
   it should "remove left hand side slash" in new AppConfigScenario {

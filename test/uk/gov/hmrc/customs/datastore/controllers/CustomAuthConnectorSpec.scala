@@ -18,9 +18,9 @@ package uk.gov.hmrc.customs.datastore.controllers
 
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
-import play.api.{Configuration, Environment, Mode}
+import play.api.{Configuration, Environment}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
-import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 
@@ -28,7 +28,7 @@ class CustomAuthConnectorSpec extends PlaySpec with MockitoSugar {
 
   val env = Environment.simple()
   val configuration = Configuration.load(env)
-  val servicesConfig = new ServicesConfig(configuration, new RunMode(configuration, Mode.Test))
+  val servicesConfig = new ServicesConfig(configuration)
 
   implicit val appConfig = new AppConfig(configuration, servicesConfig)
 
