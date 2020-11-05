@@ -147,5 +147,4 @@ class TraderDataSchema @Inject()(eoriStore: EoriStore,
       }
     )
   )
-
 }

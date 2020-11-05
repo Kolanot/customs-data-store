@@ -19,7 +19,6 @@ package uk.gov.hmrc.customs.datastore.services
 import java.time.OffsetDateTime
 
 import com.google.inject.Inject
-import com.kenshoo.play.metrics.Metrics
 import javax.inject.Singleton
 import play.api.http.Status
 import services.DateTimeService
@@ -30,7 +29,7 @@ import scala.util.{Failure, Success}
 
 
 @Singleton
-class MetricsReporterService @Inject()(val metrics: Metrics, dateTimeService: DateTimeService) {
+class MetricsReporterService @Inject()(metrics: com.kenshoo.play.metrics.Metrics, dateTimeService: DateTimeService) {
 
   def withResponseTimeLogging[T](resourceName: String)(future: Future[T])
                                 (implicit ec: ExecutionContext): Future[T] = {

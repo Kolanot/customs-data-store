@@ -23,13 +23,13 @@ import play.api.mvc._
 import play.api.{Logger, LoggerLike}
 import sangria.ast.Document
 import sangria.execution.{HandledException, _}
-import sangria.marshalling.playJson._
 import sangria.marshalling.MarshallingUtil._
+import sangria.marshalling.playJson._
 import sangria.parser.QueryParser
 import uk.gov.hmrc.customs.datastore.graphql.GraphQL
 import uk.gov.hmrc.customs.datastore.services.ServerTokenAuthorization
 import uk.gov.hmrc.http.{GatewayTimeoutException, HeaderCarrier, Upstream5xxResponse}
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -43,8 +43,8 @@ import scala.util.{Failure, Success, Try}
   * @param executionContext execute program logic asynchronously, typically but not necessarily on a thread pool
   */
 @Singleton
-class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, graphQL: GraphQL)
-                                 (implicit val executionContext: ExecutionContext) extends BaseController {
+class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, graphQL: GraphQL, cc: ControllerComponents)
+                                 (implicit val executionContext: ExecutionContext) extends BackendController(cc) {
 
   val log: LoggerLike = Logger(this.getClass)
   
@@ -65,6 +65,8 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
           case _ => None
         }
       )
+
+
 
       // TODO consider creating a GraphQLQuery type
       val maybeQuery: Try[(String, Option[String], Option[JsObject])] = Try {
@@ -137,7 +139,7 @@ class GraphQLController @Inject()(val serverAuth: ServerTokenAuthorization, grap
       }
     }.recover {
         case error: QueryAnalysisError => log.error(s"graphql error: ${error.getMessage}"); BadRequest(error.resolveError)
-        case error: ErrorWithResolver => log.error(s"graphql error: ${error.getMessage}"); InternalServerError(error.resolveError)
+        case error: ErrorWithResolver =>  log.error(s"graphql error: ${error.getMessage}"); InternalServerError(error.resolveError)
       }
   }
 

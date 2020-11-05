@@ -33,22 +33,21 @@
 package uk.gov.hmrc.customs.datastore.testOnly.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.i18n.MessagesApi
-import play.api.mvc.{Action, AnyContent}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.customs.datastore.config.AppConfig
 import uk.gov.hmrc.customs.datastore.services.FeatureSwitch
-import uk.gov.hmrc.play.bootstrap.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 @Singleton
-class FeatureSwitchController @Inject()(val messagesApi: MessagesApi, implicit val appConfig: AppConfig) extends FrontendController {
+class FeatureSwitchController @Inject()(implicit val appConfig: AppConfig, cc: ControllerComponents) extends BackendController(cc) {
 
   def enable(featureName: String): Action[AnyContent] = Action { implicit request =>
-    FeatureSwitch.forName(featureName).enable
+    FeatureSwitch.forName(featureName).enable()
     Ok(s"Enabled feature $featureName")
   }
 
   def disable(featureName: String): Action[AnyContent] = Action { implicit request =>
-    FeatureSwitch.forName(featureName).disable
+    FeatureSwitch.forName(featureName).disable()
     Ok(s"Disabled feature $featureName")
   }
 

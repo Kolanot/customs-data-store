@@ -17,33 +17,31 @@
 package uk.gov.hmrc.customs.datastore.config
 
 import javax.inject.{Inject, Singleton}
-import play.api.Mode.Mode
-import play.api.{Configuration, Environment}
+import play.api.Configuration
 import uk.gov.hmrc.customs.datastore.services.FeatureSwitch
-import uk.gov.hmrc.play.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 @Singleton
-class AppConfig @Inject()(val runModeConfiguration: Configuration, val environment: Environment) extends ServicesConfig {
-  override protected def mode: Mode = environment.mode
+class AppConfig @Inject()(val configuration: Configuration, servicesConfig: ServicesConfig){
 
-  val authUrl = baseUrl("auth")
+  val authUrl = servicesConfig.baseUrl("auth")
 
-  val serverToken = "Bearer " + runModeConfiguration.getString("server-token").get
-  val bearerToken = "Bearer " + getConfString("actualmdg.bearer-token", "secret-token")
+  val serverToken = "Bearer " + configuration.get[String]("server-token")
+  val bearerToken = "Bearer " + configuration.getOptional[String]("microservice.services.actualmdg.bearer-token").getOrElse("secret-token")
 
   def eoriHistoryUrl: String = FeatureSwitch.ActualMdg.isEnabled() match {
-    case true => baseUrl("actualmdg") / getConfString("actualmdg.historicEoriEndpoint", "config-error")
-    case false => baseUrl("mdg") / getConfString("mdg.historicEoriEndpoint", "config-error")
+    case true => servicesConfig.baseUrl("actualmdg") / configuration.get[String]("microservice.services.actualmdg.historicEoriEndpoint")
+    case false => servicesConfig.baseUrl("mdg") / configuration.get[String]("microservice.services.mdg.historicEoriEndpoint")
   }
 
   // TODO: rename actualmdg -> mdg; mdg -> mdg-stub
   def companyInformationUrl: String = FeatureSwitch.ActualMdg.isEnabled() match {
-    case true => baseUrl("actualmdg") / getConfString("actualmdg.companyInformationEndpoint", "config-error")
-    case false => baseUrl("mdg") / getConfString("mdg.companyInformationEndpoint", "config-error")
+    case true => servicesConfig.baseUrl("actualmdg") / configuration.get[String]("microservice.services.actualmdg.companyInformationEndpoint")
+    case false => servicesConfig.baseUrl("mdg") / configuration.get[String]("microservice.services.mdg.companyInformationEndpoint")
   }
 
   private val DEFAULT_TIME_TO_LIVE: Int = 30 * 24 * 60 * 60
-  val dbTimeToLiveInSeconds: Int = runModeConfiguration.getInt("mongodb.timeToLiveInSeconds").getOrElse(DEFAULT_TIME_TO_LIVE)
+  val dbTimeToLiveInSeconds: Int = configuration.getOptional[Int]("mongodb.timeToLiveInSeconds").getOrElse(DEFAULT_TIME_TO_LIVE)
 
   //Remove duplicate / from urls read from config
   implicit class URLSyntacticSugar(left: String) {

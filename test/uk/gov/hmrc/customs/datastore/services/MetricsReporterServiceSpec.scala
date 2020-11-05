@@ -20,20 +20,18 @@ import java.time.OffsetDateTime
 
 import com.codahale.metrics.{Histogram, MetricRegistry}
 import com.kenshoo.play.metrics.Metrics
-import org.mockito.ArgumentMatchers
+import org.mockito.Matchers.any
 import org.mockito.Mockito.{verify, when}
-import org.scalatest.mockito.MockitoSugar
-import org.scalatestplus.play.PlaySpec
 import play.api.http.Status
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+import scala.concurrent.ExecutionContext.Implicits.global
 import services.DateTimeService
+import uk.gov.hmrc.customs.datastore.utils.SpecBase
 import uk.gov.hmrc.http._
 
 import scala.concurrent.Future
 
 
-class MetricsReporterServiceSpec extends PlaySpec with MockitoSugar with FutureAwaits with DefaultAwaitTimeout {
+class MetricsReporterServiceSpec extends SpecBase {
 
   val mockDateTimeService = mock[DateTimeService]
   val startTimestamp = OffsetDateTime.parse("2018-11-09T17:15:30+01:00")
@@ -46,7 +44,7 @@ class MetricsReporterServiceSpec extends PlaySpec with MockitoSugar with FutureA
   val mockHistogram = mock[Histogram]
 
   val mockRegistry = mock[MetricRegistry]
-  when(mockRegistry.histogram(ArgumentMatchers.any())).thenReturn(mockHistogram)
+  when(mockRegistry.histogram(any())).thenReturn(mockHistogram)
 
   val mockMetrics = mock[Metrics]
   when(mockMetrics.defaultRegistry).thenReturn(mockRegistry)
