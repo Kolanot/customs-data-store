@@ -53,7 +53,9 @@ class EoriHistoryService @Inject()(appConfig: AppConfig, http: HttpClient, metri
               log.error(ex.getMessage, ex)
               throw ex
           }
-        }
+        } recover {
+          case ex => log.error(ex.getMessage, ex); throw ex
+      }
     }
   }
 
