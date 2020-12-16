@@ -17,7 +17,6 @@
 package uk.gov.hmrc.customs.datastore.services
 
 import java.time.LocalDate
-
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.any
 import org.mockito.Mockito.when
@@ -31,7 +30,7 @@ import uk.gov.hmrc.customs.datastore.domain._
 import uk.gov.hmrc.customs.datastore.domain.onwire._
 import uk.gov.hmrc.customs.datastore.utils.SpecBase
 import uk.gov.hmrc.http.logging.Authorization
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UpstreamErrorResponse}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.annotation.tailrec
@@ -214,6 +213,36 @@ class EoriHistoryServiceSpec extends SpecBase {
         val response = Await.ready(service.getHistory(someEori), 2 seconds)
         response.onFailure {
           case ex: UpstreamErrorResponse => ex.statusCode mustBe 403
+        }
+      }
+    }
+
+    "recover when Throwable occurs" in new ETMPScenario {
+      val errorResponse =
+        """<html>
+          |<head><title>Error Error 400 BadRequest - MDG-WAF 15671#15671: *1445924/Blocked - MDG-WAF:: Empty Uri</title></head>
+          |<body bgcolor="white">
+          |<center><h1>400 BadRequest</h1></center>
+          |<hr><center>nginx</center>
+          |</body>
+          |</html>""".stripMargin
+
+      val mockHttp = mock[HttpClient]
+
+      val httpResponse = HttpResponse(400, None, Map.empty, Some(errorResponse))
+      when(mockHttp.GET[HttpResponse](any())(any(), any(), any()))
+        .thenReturn(Future.failed(new Throwable("Boom")))
+
+      private val app: Application = new GuiceApplicationBuilder().overrides(
+        api.inject.bind[HttpClient].toInstance(mockHttp)
+      ).build()
+
+      val service = app.injector.instanceOf[EoriHistoryService]
+
+      running(app) {
+        val response = Await.ready(service.getHistory(someEori), 2 seconds)
+        response.onFailure {
+          case ex: UpstreamErrorResponse => ex.statusCode mustBe 400
         }
       }
     }
