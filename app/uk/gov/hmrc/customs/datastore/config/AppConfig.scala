@@ -18,7 +18,6 @@ package uk.gov.hmrc.customs.datastore.config
 
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
-import uk.gov.hmrc.customs.datastore.services.FeatureSwitch
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 @Singleton
@@ -29,16 +28,8 @@ class AppConfig @Inject()(val configuration: Configuration, servicesConfig: Serv
   val serverToken = "Bearer " + configuration.get[String]("server-token")
   val bearerToken = "Bearer " + configuration.getOptional[String]("microservice.services.actualmdg.bearer-token").getOrElse("secret-token")
 
-  def eoriHistoryUrl: String = FeatureSwitch.ActualMdg.isEnabled() match {
-    case true => servicesConfig.baseUrl("actualmdg") / configuration.get[String]("microservice.services.actualmdg.historicEoriEndpoint")
-    case false => servicesConfig.baseUrl("mdg") / configuration.get[String]("microservice.services.mdg.historicEoriEndpoint")
-  }
-
-  // TODO: rename actualmdg -> mdg; mdg -> mdg-stub
-  def companyInformationUrl: String = FeatureSwitch.ActualMdg.isEnabled() match {
-    case true => servicesConfig.baseUrl("actualmdg") / configuration.get[String]("microservice.services.actualmdg.companyInformationEndpoint")
-    case false => servicesConfig.baseUrl("mdg") / configuration.get[String]("microservice.services.mdg.companyInformationEndpoint")
-  }
+  lazy val eoriHistoryUrl: String = servicesConfig.baseUrl("mdg") / configuration.getOptional[String]("microservice.services.mdg.historicEoriEndpoint").getOrElse("/")
+  lazy val companyInformationUrl: String = servicesConfig.baseUrl("mdg") / configuration.getOptional[String]("microservice.services.mdg.companyInformationEndpoint").getOrElse("/")
 
   private val DEFAULT_TIME_TO_LIVE: Int = 30 * 24 * 60 * 60
   val dbTimeToLiveInSeconds: Int = configuration.getOptional[Int]("mongodb.timeToLiveInSeconds").getOrElse(DEFAULT_TIME_TO_LIVE)
