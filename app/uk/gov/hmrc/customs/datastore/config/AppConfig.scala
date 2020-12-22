@@ -26,7 +26,7 @@ class AppConfig @Inject()(val configuration: Configuration, servicesConfig: Serv
   val authUrl = servicesConfig.baseUrl("auth")
 
   val serverToken = "Bearer " + configuration.get[String]("server-token")
-  val bearerToken = "Bearer " + configuration.getOptional[String]("microservice.services.actualmdg.bearer-token").getOrElse("secret-token")
+  val bearerToken = "Bearer " + configuration.getOptional[String]("microservice.services.mdg.bearer-token").getOrElse("secret-token")
 
   lazy val eoriHistoryUrl: String = servicesConfig.baseUrl("mdg") / configuration.getOptional[String]("microservice.services.mdg.historicEoriEndpoint").getOrElse("/")
   lazy val companyInformationUrl: String = servicesConfig.baseUrl("mdg") / configuration.getOptional[String]("microservice.services.mdg.companyInformationEndpoint").getOrElse("/")
