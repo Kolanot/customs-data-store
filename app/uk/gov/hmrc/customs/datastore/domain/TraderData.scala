@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,17 @@
 
 package uk.gov.hmrc.customs.datastore.domain
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class EoriPeriod(eori: Eori,
                       validFrom: Option[String],
-                      validUntil: Option[String])
+                      validUntil: Option[String]) {
+  def definedDates: Boolean = validFrom.isDefined || validUntil.isDefined
+}
+
+object EoriPeriod {
+  implicit val format: OFormat[EoriPeriod] = Json.format[EoriPeriod]
+}
 
 case class NotificationEmail(address: Option[EmailAddress],
                              timestamp: Option[Timestamp])
