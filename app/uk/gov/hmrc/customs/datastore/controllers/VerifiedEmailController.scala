@@ -19,7 +19,7 @@ package uk.gov.hmrc.customs.datastore.controllers
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.customs.datastore.domain.request.UpdateVerifiedEmailRequest
-import uk.gov.hmrc.customs.datastore.domain.{Eori, EoriPeriod, NotificationEmail, TraderData}
+import uk.gov.hmrc.customs.datastore.domain.{Eori, EoriPeriod, NotificationEmail}
 import uk.gov.hmrc.customs.datastore.services.{EoriStore, SubscriptionInfoService}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
