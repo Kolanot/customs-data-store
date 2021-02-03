@@ -2,6 +2,9 @@
 
 POST       /graphql                        uk.gov.hmrc.customs.datastore.controllers.GraphQLController.handleRequest
 
+GET        /eori/:eori/verified-email      uk.gov.hmrc.customs.datastore.controllers.VerifiedEmailController.getVerifiedEmail(eori: String)
+POST       /update-email                   uk.gov.hmrc.customs.datastore.controllers.VerifiedEmailController.updateVerifiedEmail()
+
 GET        /eori/:eori/eori-history         uk.gov.hmrc.customs.datastore.controllers.EoriHistoryController.getEoriHistory(eori: String)
 POST       /update-eori-history             uk.gov.hmrc.customs.datastore.controllers.EoriHistoryController.updateEoriHistory()
 
