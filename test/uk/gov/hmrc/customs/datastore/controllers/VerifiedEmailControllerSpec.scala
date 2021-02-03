@@ -108,7 +108,7 @@ class VerifiedEmailControllerSpec extends SpecBase {
       when(mockEoriStore.upsertByEori(any(), any())).thenReturn(Future.successful(false))
 
       val request = FakeRequest(POST, routes.VerifiedEmailController.updateVerifiedEmail().url).withJsonBody(
-        Json.obj("eori" -> testEori, "address" -> testAddress)
+        Json.obj("eori" -> testEori, "address" -> testAddress, "timestamp" -> testTime.toString)
       )
 
       running(app){
@@ -127,19 +127,6 @@ class VerifiedEmailControllerSpec extends SpecBase {
       running(app){
         val result = route(app, request).value
         status(result) mustBe 400
-      }
-    }
-
-    "return 204 if the update was successful without a timestamp present" in new Setup {
-      when(mockEoriStore.upsertByEori(any(), any())).thenReturn(Future.successful(true))
-
-      val request = FakeRequest(POST, routes.VerifiedEmailController.updateVerifiedEmail().url).withJsonBody(
-        Json.obj("eori" -> testEori, "address" -> testAddress)
-      )
-
-      running(app){
-        val result = route(app, request).value
-        status(result) mustBe 204
       }
     }
 
