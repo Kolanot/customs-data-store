@@ -21,7 +21,13 @@ import uk.gov.hmrc.customs.datastore.domain.request.UpdateVerifiedEmailRequest
 
 case class EoriPeriod(eori: Eori,
                       validFrom: Option[String],
-                      validUntil: Option[String])
+                      validUntil: Option[String]) {
+  def definedDates: Boolean = validFrom.isDefined || validUntil.isDefined
+}
+
+object EoriPeriod {
+  implicit val format: OFormat[EoriPeriod] = Json.format[EoriPeriod]
+}
 
 case class NotificationEmail(address: Option[EmailAddress],
                              timestamp: Option[Timestamp])
@@ -34,13 +40,9 @@ object TraderData {
   implicit val traderDataFormat: OFormat[TraderData] = Json.format[TraderData]
 }
 
-object EoriPeriod {
-  implicit val eoriPeriodFormat: OFormat[EoriPeriod] = Json.format[EoriPeriod]
-}
-
 object NotificationEmail {
   def fromEmailRequest(updateVerifiedEmailRequest: UpdateVerifiedEmailRequest): NotificationEmail = {
-    NotificationEmail(Some(updateVerifiedEmailRequest.address), updateVerifiedEmailRequest.timeStamp)
+    NotificationEmail(Some(updateVerifiedEmailRequest.address), Some(updateVerifiedEmailRequest.timestamp))
   }
 
   implicit val emailFormat: OFormat[NotificationEmail] = Json.format[NotificationEmail]

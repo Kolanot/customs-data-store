@@ -18,7 +18,7 @@ package uk.gov.hmrc.customs.datastore.domain.request
 
 import play.api.libs.json.{Json, OFormat}
 
-case class UpdateVerifiedEmailRequest(eori: String, address: String, timeStamp: Option[String])
+case class UpdateVerifiedEmailRequest(eori: String, address: String, timestamp: String)
 
 object UpdateVerifiedEmailRequest {
   implicit val format: OFormat[UpdateVerifiedEmailRequest] = Json.format[UpdateVerifiedEmailRequest]
