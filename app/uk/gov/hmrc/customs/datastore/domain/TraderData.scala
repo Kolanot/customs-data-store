@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package uk.gov.hmrc.customs.datastore.domain
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.customs.datastore.domain.request.UpdateVerifiedEmailRequest
 
 case class EoriPeriod(eori: Eori,
                       validFrom: Option[String],
@@ -30,7 +31,17 @@ case class TraderData(eoriHistory: Seq[EoriPeriod],
                       notificationEmail:Option[NotificationEmail])
 
 object TraderData {
-  implicit val eoriPeriodFormat = Json.format[EoriPeriod]
-  implicit val emailFormat = Json.format[NotificationEmail]
-  implicit val traderDataFormat = Json.format[TraderData]
+  implicit val traderDataFormat: OFormat[TraderData] = Json.format[TraderData]
+}
+
+object EoriPeriod {
+  implicit val eoriPeriodFormat: OFormat[EoriPeriod] = Json.format[EoriPeriod]
+}
+
+object NotificationEmail {
+  def fromEmailRequest(updateVerifiedEmailRequest: UpdateVerifiedEmailRequest): NotificationEmail = {
+    NotificationEmail(Some(updateVerifiedEmailRequest.address), updateVerifiedEmailRequest.timeStamp)
+  }
+
+  implicit val emailFormat: OFormat[NotificationEmail] = Json.format[NotificationEmail]
 }

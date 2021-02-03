@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-package services
+package uk.gov.hmrc.customs.datastore.domain.request
 
-import java.time.{Instant, OffsetDateTime, ZoneOffset}
+import play.api.libs.json.{Json, OFormat}
 
-import javax.inject.Singleton
+case class UpdateVerifiedEmailRequest(eori: String, address: String, timeStamp: Option[String])
 
-@Singleton
-case class DateTimeService() {
-
-  def getTimeStamp(): OffsetDateTime = OffsetDateTime.ofInstant( Instant.now() , ZoneOffset.UTC)
-
+object UpdateVerifiedEmailRequest {
+  implicit val format: OFormat[UpdateVerifiedEmailRequest] = Json.format[UpdateVerifiedEmailRequest]
 }
-
