@@ -94,7 +94,7 @@ An endpoint to populate the historic EORI's for a given EORI
 }
 ```
 
-###Response codes
+### Response codes
 
 | Status                               | Description                                          |
 | ---------------------------------  | ---------------------------------------------------- |
