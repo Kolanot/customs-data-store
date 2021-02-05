@@ -10,11 +10,11 @@ This repository contains the code for a persistent cache holding customs related
 | POST /customs-data-store/update-email | Populates a new verified email address in the cache | 
 | POST /customs-data-store/update-eori-history | Updates the eori history for a given EORI in the cache |
 
-##GET /eori/:eori/verified-email
+## GET /eori/:eori/verified-email
 
 An endpoint to retrieve a verified email address for a given EORI
 
-###Response body
+### Response body
 
 ```json
 {
@@ -23,7 +23,7 @@ An endpoint to retrieve a verified email address for a given EORI
 }
 ```
 
-###Response codes
+### Response codes
 
 | Status                               | Description                                          |
 | ---------------------------------  | ---------------------------------------------------- |
@@ -31,11 +31,11 @@ An endpoint to retrieve a verified email address for a given EORI
 | 404 | No verified email has been found for the specified eori        |
 | 500 | An unexpected failure happened in the service |
 
-##POST /update-email
+## POST /update-email
 
 An endpoint to update the verified email address for a given EORI
 
-###Example request
+### Example request
 
 ```json
 {
@@ -45,7 +45,7 @@ An endpoint to update the verified email address for a given EORI
 }
 ```
 
-###Fields
+### Fields
 
 | Field                               | Required                                          | Description                                          |
 | ---------------------------------  | ---------------------------------------------------- | ---------------------------------------------------- |
@@ -53,11 +53,11 @@ An endpoint to update the verified email address for a given EORI
 | address | Mandatory        | The verified email address for the specified eori        |
 | timestamp | Mandatory | The timestamp when the email was verified |
 
-##GET /eori/:eori/eori-history
+## GET /eori/:eori/eori-history
 
 An endpoint that provides a list of all historic EORI's associated with a given EORI
 
-###Response body
+### Response body
 
 ```json
 {
@@ -75,18 +75,18 @@ An endpoint that provides a list of all historic EORI's associated with a given 
 ]
 }
 ```
-###Response codes
+### Response codes
 
 | Status                               | Description                                          |
 | ---------------------------------  | ---------------------------------------------------- |
 | 200 | A sequence of historic eori's returned        |
 | 500 | An unexpected failure happened in the service |
 
-##POST /update-eori-history
+## POST /update-eori-history
 
 An endpoint to populate the historic EORI's for a given EORI
 
-###Example request
+### Example request
 
 ```json
 {
